@@ -1,0 +1,222 @@
+==============================================================================
+ SYNKFLOW — HOW TO USE IT                         "Your desk. In sync."
+==============================================================================
+
+WHAT SYNKFLOW DOES
+------------------
+Synkflow lets you use ONE mouse and keyboard across your own computers (for
+example a Mac and a Windows laptop) on your own network. Push the pointer past
+the edge of one screen and it continues on the next computer; the keyboard
+follows. It can also share the clipboard (text and images) and send files.
+
+Everything stays on your local network. There is no account, no cloud, no relay
+and no telemetry. Every computer must be approved by you, on both sides.
+
+
+BEFORE YOU START
+----------------
+ * Two or more computers on the SAME network (same Wi-Fi or same switch).
+ * Synkflow installed on each of them.
+     macOS:   open the .dmg, drag Synkflow to Applications.
+              The first time, right-click Synkflow -> Open (the app is
+              not notarized by Apple, so macOS asks you to confirm).
+     Windows: run Synkflow-Setup. It installs for your user only, needs no
+              administrator rights, and adds a Start-menu entry.
+ * macOS only: Synkflow needs two permissions to read and send your mouse and
+   keyboard: ACCESSIBILITY and INPUT MONITORING. The app guides you.
+
+
+FIRST RUN — FIVE SHORT SCREENS
+------------------------------
+ 1. WELCOME. Read the three promises: no account, no cloud relay, you approve
+    every device. Press Continue.
+ 2. SET UP THIS COMPUTER. Give it a name (a label other computers will show).
+    Check the list "What this computer can do". If something says it needs
+    permission, press "Ask for access" or "Open system settings", grant it, then
+    "Check again". You can continue without it; sharing stays off until granted.
+ 3. FIND YOUR OTHER COMPUTER. Nearby computers running Synkflow appear as
+    "Not paired". If nothing appears (some networks block discovery), type the
+    other computer's address (for example 192.168.1.20) and press "Pair by
+    address". Synkflow never scans your network; it only contacts what you type.
+ 4. VERIFY IDENTITY (see "Pairing" below).
+ 5. ARRANGE YOUR SCREENS. Drag each computer to where it really sits on your
+    desk. Press "Start sharing" when the checklist is green. (You can also
+    finish with sharing off and start it later.)
+
+
+PAIRING — HOW TO BE SURE IT IS REALLY YOUR COMPUTER
+---------------------------------------------------
+Pairing needs a person at BOTH computers.
+
+ On computer B (the one being found):  Devices -> "Pair a device"
+     (this opens a 2-minute "accepting pairing requests" window).
+ On computer A:  pick B in the list (or enter its address) and press "Pair".
+
+Now BOTH screens show two fingerprints: "This computer" and the other
+computer's. Each is 64 hexadecimal digits shown in four lines. Compare them:
+what A shows as "This computer" must be what B shows as the other computer,
+and the other way round. Read them aloud or check them side by side.
+
+ * A name or an IP address proves nothing. Only the fingerprint does.
+ * If they differ, press "Don't pair". Something is in the middle.
+ * If they match, choose what the device may do and press "The fingerprints
+   match — approve" on BOTH computers.
+
+Trust is recorded only when both sides have approved. Until then nothing is
+trusted and nothing can be controlled.
+
+Permissions you choose while pairing (you can change them any time in Devices):
+   - Let this computer control it            (my mouse/keyboard -> that computer)
+   - Let it control this computer            (its mouse/keyboard -> mine)
+   - Share the clipboard in both directions  (off by default — see warning below)
+   - Accept files from it                    (every transfer still asks first)
+
+
+USING IT
+--------
+ * MOVE BETWEEN COMPUTERS: push the pointer against the screen edge that faces
+   the other computer. It appears on the other screen at the same height.
+   Typing goes to the computer that has the pointer. Push back across the edge
+   to return.
+ * SWITCH WITH THE KEYBOARD: Ctrl+Alt+Shift+S moves to the next computer, or
+   back. (Settings -> Input to change.)
+ * STAY ON THIS COMPUTER: Settings -> Input -> "Stay on this computer". The
+   pointer will not cross, which is what you want in full-screen games and
+   presentations.
+ * HOT CORNERS: screen corners do NOT switch computers by default, so macOS hot
+   corners keep working.
+ * OPTIONAL SAFETY: require a modifier key (Shift by default) or a short hold
+   at the edge before crossing — Settings -> Input.
+ * MAC <-> PC SHORTCUTS: Settings -> Input -> "Translate ⌘ and Ctrl shortcuts"
+   makes Cmd+C on the Mac act as Ctrl+C on the PC (and back). It is OFF by
+   default; terminals may need it off. Override per device in Devices.
+
+
+EMERGENCY STOP
+--------------
+Ctrl+Alt+Shift+Esc, or the menu-bar / tray item "Pause all sharing", or the
+"Pause all sharing" button in the window. It:
+   - gives control back to the computer you are sitting at,
+   - releases any key or button Synkflow was holding on the other computer,
+   - pauses sharing until YOU turn it on again.
+Locking a screen, losing the network, quitting the app or removing a device do
+the same. Nothing is left stuck.
+
+
+CLIPBOARD
+---------
+Off for every device until you turn it on (Devices -> choose the device).
+When on, text and images you copy appear on the other computer. WARNING: that
+includes passwords you copy. Synkflow skips items that password managers mark
+as private, but not every program does. "Pause clipboard sharing" (Settings ->
+Clipboard, or the tray menu) stops it instantly. Clipboard content is never
+stored or written to logs.
+
+
+SENDING FILES
+-------------
+ Transfers -> choose the destination computer -> "Choose files…" or drag files
+ from your file manager onto the Synkflow window.
+ The other computer is asked: Accept or Decline. Accepted files arrive in a
+ NEW folder inside its Synkflow receive folder (default: Downloads/Synkflow),
+ are checked with SHA-256, never overwrite anything and are never opened or
+ run. You see progress, speed and time left, and can cancel at any time.
+ Limits in this version: files only (no folders), no resume after an interrupted
+ transfer (retry starts again).
+
+
+THE MENU-BAR / TRAY ITEM
+------------------------
+A small icon shows the state by SHAPE:  filled dot = sharing,  two bars =
+paused,  hollow ring = nothing connected. Its menu says the same in words and
+has: Open Synkflow · Return control to this computer · Pause clipboard ·
+Pause all sharing · Quit. Closing the window keeps Synkflow running in the
+menu bar unless you turn that off in Settings -> General.
+
+
+REMOVING A DEVICE
+-----------------
+Devices -> select it -> "Revoke trust". Any control it has ends immediately and
+it can never reconnect without pairing again. "Disconnect" only ends the current
+connection.
+
+
+TROUBLESHOOTING
+---------------
+ "No devices found"
+     - Both computers on the same network? (not guest Wi-Fi, not a VPN)
+     - The other computer must have Synkflow open.
+     - Firewalls: allow Synkflow on your PRIVATE network (Windows asks once).
+     - Use "Pair by address" if your network blocks discovery.
+ A Mac and a Windows laptop do not find or connect to each other
+     Windows Firewall is the usual cause: it keeps other computers out of
+     Synkflow until you allow it.
+     1. The first time, Windows asks "Allow Synkflow to communicate on these
+        networks?". Tick PRIVATE networks and press Allow.
+     2. Missed it? Start -> type "Allow an app through Windows Firewall" ->
+        Change settings -> Allow another app -> Browse to
+        %LOCALAPPDATA%\Programs\Synkflow\synkflow.exe -> Add -> tick Private.
+     3. Settings -> Network & internet -> Wi-Fi -> your network -> set
+        "Network profile type" to Private. Home Wi-Fi is often left on Public,
+        and Public blocks everything.
+     4. Or go around the firewall: let Windows start the pairing. On the Mac
+        open Pair a device and press "Open for 2 minutes"; it shows "This
+        computer's address" (like 192.168.1.5:24847). On the Windows laptop open
+        Pair a device and type that address under "Or enter an address". After
+        pairing, both reconnect by themselves.
+     Both computers must be on the same network (not guest Wi-Fi, not a VPN).
+ Still stuck? Settings -> Diagnostics -> "Copy diagnostics" and paste it into
+ your message. "Open settings folder" shows synkflow.log, the connection log.
+ "That computer is not accepting pairing requests"
+     - On the other computer press Devices -> Pair a device first.
+ Fingerprints don't match
+     - Stop. Don't approve. Try again on a network you trust.
+ macOS: sharing says "Needs permission"
+     - System Settings -> Privacy & Security -> Accessibility and Input
+       Monitoring -> enable Synkflow, then "Check again". If you rebuilt or
+       re-downloaded the app, macOS treats it as a new app: grant again.
+ Windows: the pointer enters but typing does nothing in one window
+     - That window is running as Administrator (or is a UAC/lock screen).
+       Windows blocks injected input there; Synkflow does not bypass it.
+ Linux: "keyboard and mouse sharing unavailable"
+     - You are on Wayland. Use an X11 session (clipboard and files still work).
+ A key seems stuck
+     - Press the emergency stop; every key Synkflow pressed is released.
+ "Connection lost. Control has returned to this computer."
+     - Synkflow reconnects by itself when the other computer is back.
+ Password fields (macOS secure input), the login window and the Windows lock
+ screen cannot be controlled by any software KVM.
+
+
+PRIVACY AND SECURITY IN SHORT
+-----------------------------
+ * Everything between your computers is encrypted (TLS 1.3) and authenticated
+   with pinned device identities. There is no unencrypted mode.
+ * Synkflow makes no internet connections: no update checks, no analytics.
+ * This protects against other devices on your network. It does NOT protect
+   against malware already running on one of your computers.
+ * Your device key lives in the operating system's secure storage when
+   available; otherwise in a private file, and the app tells you.
+ * Settings -> Privacy and security -> "Delete everything" forgets all devices
+   and deletes this computer's identity.
+
+
+HONEST LIMITS OF THIS VERSION
+-----------------------------
+ * Windows and Linux builds, and real mouse/keyboard capture on every system,
+   have not been tested by the author on real hardware — please run the
+   checklist in docs/TESTING.md and report problems.
+ * No Wayland keyboard/mouse sharing. No game-grade raw input.
+ * No OS-level drag-and-drop between computers (use "Send files").
+ * Unsigned installers: macOS and Windows will warn the first time.
+
+
+UNINSTALL
+---------
+ macOS:   quit Synkflow, drag it from Applications to the Trash.
+ Windows: Settings -> Apps -> Synkflow -> Uninstall.
+ (Settings -> Privacy and security -> "Delete everything" first, if you also
+ want your pairings and identity gone.)
+
+Synkflow is free software under the GPL-3.0. No warranty.
+==============================================================================
