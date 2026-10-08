@@ -1,0 +1,23 @@
+[package]
+name = "synkflow-setup"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+description = "Per-user installer for Synkflow on Windows"
+publish = false
+
+[dependencies]
+
+[target.'cfg(windows)'.dependencies]
+mslnk = "0.1"
+
+[target.'cfg(windows)'.dependencies.windows-sys]
+version = "0.61"
+features = ["Win32_Foundation", "Win32_Security", "Win32_System_Registry", "Win32_UI_WindowsAndMessaging"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

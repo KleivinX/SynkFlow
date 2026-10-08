@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Synkflow
+GenericName=Software KVM
+Comment=Your desk. In sync. Share one mouse and keyboard across your own computers.
+Exec=synkflow
+Icon=synkflow
+Terminal=false
+Categories=Utility;Network;
+Keywords=kvm;mouse;keyboard;clipboard;share;
+StartupWMClass=synkflow
