@@ -1,0 +1,47 @@
+name: Bug report
+description: Something does not work the way it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping. Synkflow is an early release and several platforms are only lightly tested, so reports are very useful.
+        **Two computers that cannot find or connect to each other?** Check the troubleshooting section of `docs/TUTORIAL.txt` first (Windows Firewall is the usual cause).
+  - type: dropdown
+    id: pair
+    attributes:
+      label: Which computers?
+      options:
+        - macOS and Windows
+        - macOS and macOS
+        - Windows and Windows
+        - Linux (X11) and something else
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      placeholder: "I paired the two computers, but the pointer does not cross the edge."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: false
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics from both computers
+      description: In Synkflow open Settings → Diagnostics → **Copy diagnostics** and paste the result here (one block per computer). It lists versions, network addresses and the most recent log lines, never clipboard content, file contents or full paths.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system versions
+      placeholder: "macOS 13.7, Windows 11 23H2"

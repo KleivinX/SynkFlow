@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security problem
+    url: https://github.com/KleivinX/SynkFlow/blob/main/SECURITY.md
+    about: Please read the security policy before reporting a vulnerability in public.
+  - name: Can't connect two computers?
+    url: https://github.com/KleivinX/SynkFlow/blob/main/docs/TUTORIAL.txt
+    about: The troubleshooting section covers firewalls (especially Windows Firewall), VPNs and guest Wi-Fi.

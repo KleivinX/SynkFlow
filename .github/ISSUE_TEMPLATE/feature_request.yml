@@ -1,0 +1,17 @@
+name: Feature request
+description: Suggest an improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like Synkflow to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why does it matter to you?
+  - type: markdown
+    attributes:
+      value: Synkflow stays local: no accounts, no cloud, no relay, no telemetry. Ideas that need any of those are out of scope.
