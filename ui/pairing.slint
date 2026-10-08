@@ -1,0 +1,204 @@
+// Pairing: discovery only *introduces* a device. Trust comes from comparing
+// full fingerprints on both screens and both people approving.
+
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { Title, Section, Body, Small, Strong, Mono, SfButton, SfSwitch, SfInput, Card, Badge, Icon, FingerprintBlock } from "components.slint";
+import { ScrollView } from "std-widgets.slint";
+
+export component DiscoverPanel inherits VerticalLayout {
+    spacing: 14px;
+
+    Body { text: "Open Synkflow on the other computer and choose \"Pair a device\". It appears below as \"Not paired\". Nothing is trusted until you both verify and approve."; }
+
+    // This computer can also be the one that is found.
+    Rectangle {
+        height: row.preferred-height + 24px;
+        border-radius: 12px;
+        background: Theme.elevated;
+        row := HorizontalLayout {
+            padding: 12px;
+            spacing: 12px;
+            VerticalLayout {
+                spacing: 2px;
+                horizontal-stretch: 1;
+                Strong { text: AppState.window-secs > 0 ? "This computer is accepting pairing requests" : "Accept pairing requests on this computer"; }
+                Small { text: AppState.window-secs > 0 ? "Open for " + Math.floor(AppState.window-secs / 60) + ":" + (Math.mod(AppState.window-secs, 60) < 10 ? "0" : "") + Math.mod(AppState.window-secs, 60) + ". It closes by itself." : "Do this when the other computer is the one starting the pairing."; }
+            }
+            if AppState.window-secs > 0: Badge { kind: "info"; text: "Open"; y: (parent.height - self.height) / 2; }
+            SfButton {
+                text: AppState.window-secs > 0 ? "Close" : "Open for 2 minutes";
+                y: (parent.height - self.height) / 2;
+                clicked => { if (AppState.window-secs > 0) { AppState.close-pairing(); } else { AppState.open-pairing(); } }
+            }
+        }
+    }
+
+    if AppState.no-lan: Rectangle {
+        height: nl.preferred-height + 20px;
+        border-radius: 12px;
+        background: Theme.warning.with-alpha(0.14);
+        nl := HorizontalLayout {
+            padding: 10px;
+            spacing: 10px;
+            Icon { name: "alert"; tint: Theme.warning; size: 18px; }
+            Body { text: "No local network connection. Connect both computers to the same network, then they will appear here."; color: Theme.warning; }
+        }
+    }
+    if AppState.discovery-off || AppState.discovery-error != "": Rectangle {
+        height: dl.preferred-height + 20px;
+        border-radius: 12px;
+        background: Theme.warning.with-alpha(0.14);
+        dl := HorizontalLayout {
+            padding: 10px;
+            spacing: 10px;
+            Icon { name: "alert"; tint: Theme.warning; size: 18px; }
+            Body {
+                text: AppState.discovery-error != "" ? "Automatic discovery is not available here. You can still pair by entering the other computer's address below." : "Discovery is turned off in Settings → Network. Pair by address below, or turn it on.";
+                color: Theme.warning;
+            }
+        }
+    }
+
+    Section { text: "Nearby computers"; }
+    if AppState.candidates.length == 0: Rectangle {
+        height: 76px;
+        border-radius: 12px;
+        background: Theme.elevated;
+        Body { text: "No devices found yet. Keep Synkflow open on the other computer — it can take a few seconds."; horizontal-alignment: center; vertical-alignment: center; x: 16px; width: parent.width - 32px; }
+    }
+    for c in AppState.candidates: Rectangle {
+        height: cr.preferred-height + 24px;
+        border-radius: 12px;
+        background: Theme.elevated;
+        cr := HorizontalLayout {
+            padding: 12px;
+            spacing: 12px;
+            Icon { name: "devices"; tint: Theme.purple; size: 22px; y: (parent.height - self.height) / 2; }
+            VerticalLayout {
+                spacing: 2px;
+                horizontal-stretch: 1;
+                Strong { text: c.name; }
+                Small { text: c.platform + " · " + c.addr; }
+                if c.warning != "": Small { text: c.warning; color: Theme.warning; }
+            }
+            Badge { kind: c.paired ? "ok" : "idle"; text: c.paired ? "Already paired" : "Not paired"; y: (parent.height - self.height) / 2; }
+            SfButton { text: "Pair"; enabled: !c.paired && !AppState.pairing-active; y: (parent.height - self.height) / 2; clicked => { AppState.pair-with(c.key); } }
+        }
+    }
+
+    Section { text: "Or enter an address"; }
+    Small { text: "Use this if discovery is blocked on your network. Synkflow never scans for devices; it only contacts the address you type."; }
+    if AppState.local-addrs != "": Small { text: "This computer's address, to type on the other computer instead: " + AppState.local-addrs; }
+    HorizontalLayout {
+        spacing: 8px;
+        SfInput { text <=> AppState.manual-address; placeholder: "192.168.1.20 or 192.168.1.20:24847"; label: "Address of the other computer"; accepted(t) => { AppState.pair-manual(t); } horizontal-stretch: 1; }
+        SfButton { text: "Pair by address"; enabled: AppState.manual-address != "" && !AppState.pairing-active; clicked => { AppState.pair-manual(AppState.manual-address); } }
+    }
+}
+
+export component VerifyPanel inherits VerticalLayout {
+    spacing: 14px;
+
+    if AppState.pair-stage == "connecting": Rectangle {
+        height: 120px;
+        VerticalLayout {
+            alignment: center;
+            spacing: 8px;
+            Strong { text: "Connecting…"; horizontal-alignment: center; }
+            Small { text: "Nothing is trusted yet."; horizontal-alignment: center; }
+        }
+    }
+
+    if AppState.pair-stage == "verify" || AppState.pair-stage == "waiting": VerticalLayout {
+        spacing: 14px;
+        Section { text: "Verify " + AppState.pair-peer-name; }
+        Body { text: "On the other computer, Synkflow shows its own fingerprint and yours. Both screens must show the same two fingerprints. A name or an address does not prove who is on the other end — only these digits do."; }
+        if AppState.pair-warning != "": Rectangle {
+            height: wr.preferred-height + 20px;
+            border-radius: 12px;
+            background: Theme.warning.with-alpha(0.14);
+            wr := HorizontalLayout {
+                padding: 10px;
+                spacing: 10px;
+                Icon { name: "alert"; tint: Theme.warning; size: 18px; }
+                Body { text: AppState.pair-warning; color: Theme.warning; }
+            }
+        }
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: stretch;
+            VerticalLayout {
+                spacing: 6px;
+                horizontal-stretch: 1;
+                FingerprintBlock { caption: "This computer (" + AppState.device-name + ")"; value: AppState.local-fingerprint; }
+                HorizontalLayout { alignment: start; SfButton { text: "Copy"; icon: "copy"; kind: "quiet"; clicked => { AppState.copy-text(AppState.local-fingerprint); } } }
+            }
+            VerticalLayout {
+                spacing: 6px;
+                horizontal-stretch: 1;
+                FingerprintBlock { caption: AppState.pair-peer-name + " (" + AppState.pair-peer-platform + ")"; value: AppState.pair-peer-fp; }
+                HorizontalLayout { alignment: start; SfButton { text: "Copy"; icon: "copy"; kind: "quiet"; clicked => { AppState.copy-text(AppState.pair-peer-fp); } } }
+            }
+        }
+        if AppState.pair-stage == "verify": VerticalLayout {
+            spacing: 10px;
+            Section { text: "What may " + AppState.pair-peer-name + " do?"; }
+            SfInput { text <=> AppState.new-label; placeholder: AppState.pair-peer-name; label: "Name for this device"; }
+            SfSwitch { label: "Let this computer control it"; hint: "Your mouse and keyboard can move onto that computer."; checked <=> AppState.new-share-input; }
+            SfSwitch { label: "Let it control this computer"; hint: "Its mouse and keyboard can drive this one while Synkflow shows that it is on."; checked <=> AppState.new-accept-input; }
+            SfSwitch { label: "Share the clipboard in both directions"; hint: "Anything you copy, including passwords, can travel across. Off by default."; checked <=> AppState.new-clipboard; }
+            SfSwitch { label: "Accept files from it"; hint: "You still approve every transfer."; checked <=> AppState.new-files; }
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: end;
+                SfButton { text: "Don't pair"; kind: "danger"; clicked => { AppState.reject-pairing(); } }
+                SfButton { text: "The fingerprints match — approve"; kind: "primary"; clicked => { AppState.approve-pairing(); } }
+            }
+            Small { text: "The other computer must approve too. Trust is only recorded when both sides have."; }
+        }
+        if AppState.pair-stage == "waiting": Rectangle {
+            height: 64px;
+            border-radius: 12px;
+            background: Theme.elevated;
+            HorizontalLayout {
+                padding: 14px;
+                spacing: 12px;
+                Icon { name: "ring"; tint: Theme.purple; size: 20px; y: (parent.height - self.height) / 2; }
+                VerticalLayout {
+                    alignment: center;
+                    Strong { text: "Waiting for " + AppState.pair-peer-name + " to approve…"; }
+                    Small { text: "You approved. It expires in " + AppState.pair-seconds + " seconds."; }
+                }
+            }
+        }
+    }
+
+    if AppState.pair-stage == "done": VerticalLayout {
+        spacing: 12px;
+        alignment: center;
+        height: 150px;
+        Icon { name: "check"; tint: Theme.success; size: 32px; x: (parent.width - self.width) / 2; }
+        Section { text: "Paired with " + AppState.pair-peer-name; horizontal-alignment: center; }
+        Body { text: "Only what you allowed is on. You can change it any time in Devices."; horizontal-alignment: center; }
+    }
+
+    if AppState.pair-stage == "failed": VerticalLayout {
+        spacing: 12px;
+        Rectangle {
+            height: fr.preferred-height + 24px;
+            border-radius: 12px;
+            background: Theme.error.with-alpha(0.14);
+            fr := HorizontalLayout {
+                padding: 12px;
+                spacing: 10px;
+                Icon { name: "alert"; tint: Theme.error; size: 20px; }
+                VerticalLayout {
+                    spacing: 4px;
+                    Strong { text: AppState.pair-error; color: Theme.error; }
+                    Small { text: "Nothing was trusted and nothing was shared."; }
+                }
+            }
+        }
+    }
+}

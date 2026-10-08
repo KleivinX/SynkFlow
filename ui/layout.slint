@@ -1,0 +1,270 @@
+// Screen layout: devices as groups of monitor tiles on a shared desk.
+// Tiles follow the pointer 1:1 while dragged; snapping and validity are
+// decided in Rust on drop, and the tile then glides to its snapped place.
+
+import { Theme } from "theme.slint";
+import { AppState, TileRow, GroupRow } from "state.slint";
+import { Title, Section, Body, Small, Strong, SfButton, SfSwitch, Card, Badge, Icon } from "components.slint";
+import { ScrollView } from "std-widgets.slint";
+
+export component LayoutCanvas inherits Rectangle {
+    in property <bool> interactive: false;
+    in property <float> user-zoom: 1.0;
+
+    // Pixels per layout point so that everything fits, times the user's zoom.
+    private property <float> fit: Math.max(0.005, Math.min((root.width - 56px) / (AppState.bounds-w * 1px), (root.height - 56px) / (AppState.bounds-h * 1px)));
+    private property <float> scale: fit * (interactive ? user-zoom : 1.0);
+    private property <length> ox: (root.width - AppState.bounds-w * scale * 1px) / 2 - AppState.bounds-x * scale * 1px + (interactive ? AppState.pan-x : 0px);
+    private property <length> oy: (root.height - AppState.bounds-h * scale * 1px) / 2 - AppState.bounds-y * scale * 1px + (interactive ? AppState.pan-y : 0px);
+
+    private property <int> dragging: -1;
+    private property <float> dx: 0.0;
+    private property <float> dy: 0.0;
+
+    background: Theme.canvas;
+    border-radius: Theme.radius-panel;
+    border-width: 1px;
+    border-color: Theme.border-subtle;
+    clip: true;
+    accessible-role: groupbox;
+    accessible-label: "Screen layout";
+    accessible-description: "Arrange the monitors of your computers. Select a device, then use the arrow keys to move it.";
+
+    // A faint dot grid helps judge distances; static, drawn once.
+    for gx in 14: Rectangle {
+        x: gx * (root.width / 14);
+        y: 0px;
+        width: 1px;
+        height: root.height;
+        background: Theme.border-subtle.with-alpha(0.35);
+    }
+
+    // Device outlines (behind the tiles).
+    for g[gi] in AppState.groups: Rectangle {
+        private property <float> gdx: root.dragging == g.index ? root.dx : 0.0;
+        private property <float> gdy: root.dragging == g.index ? root.dy : 0.0;
+        x: root.ox + (g.x + gdx) * root.scale * 1px - 8px;
+        y: root.oy + (g.y + gdy) * root.scale * 1px - 26px;
+        width: g.w * root.scale * 1px + 16px;
+        height: g.h * root.scale * 1px + 34px;
+        border-radius: 14px;
+        background: g.active ? Theme.amber.with-alpha(0.16) : (g.local ? Theme.amber.with-alpha(0.08) : Theme.purple.with-alpha(0.08));
+        border-width: (g.invalid || g.active) ? 2px : 1px;
+        border-color: g.invalid ? Theme.error : g.active ? Theme.amber : (g.local ? Theme.amber.with-alpha(0.55) : Theme.purple.with-alpha(0.55));
+        animate x, y { duration: root.dragging == g.index ? 0ms : Theme.t-snap; easing: ease-out; }
+        HorizontalLayout {
+            padding-left: 10px;
+            padding-top: 5px;
+            padding-right: 10px;
+            spacing: 6px;
+            Text {
+                text: g.label + (g.local ? " (this computer)" : "") + (g.active ? " · in use" : "") + (g.online ? "" : " · offline") + (g.unreachable ? " · not connected to the desk" : "");
+                color: g.invalid ? Theme.error : Theme.text-2;
+                font-size: Theme.fs-small;
+                font-weight: 600;
+                overflow: elide;
+            }
+        }
+    }
+
+    // Monitor tiles.
+    for t[ti] in AppState.tiles: Rectangle {
+        private property <float> gdx: root.dragging == t.device ? root.dx : 0.0;
+        private property <float> gdy: root.dragging == t.device ? root.dy : 0.0;
+        private property <bool> selected: AppState.selected-tile == t.index;
+        x: root.ox + (t.x + gdx) * root.scale * 1px;
+        y: root.oy + (t.y + gdy) * root.scale * 1px;
+        width: Math.max(24px, t.w * root.scale * 1px);
+        height: Math.max(18px, t.h * root.scale * 1px);
+        border-radius: 8px;
+        background: !t.enabled ? Theme.elevated.with-alpha(0.5) : t.local ? Theme.surface : Theme.elevated;
+        border-width: selected ? 3px : 2px;
+        border-color: selected ? Theme.focus : t.invalid ? Theme.error : t.local ? Theme.amber-deep : Theme.purple;
+        opacity: t.online || t.local ? 1.0 : 0.65;
+        animate x, y { duration: root.dragging == t.device ? 0ms : Theme.t-snap; easing: ease-out; }
+        accessible-role: button;
+        accessible-label: t.device-label + ", " + t.label + ", " + t.detail + (t.enabled ? "" : ", excluded");
+        accessible-action-default => { AppState.layout-select(t.index); }
+
+        VerticalLayout {
+            padding: 8px;
+            spacing: 2px;
+            alignment: center;
+            if self.width > 60px: Text {
+                text: t.device-label;
+                color: Theme.text;
+                font-size: Theme.fs-small;
+                font-weight: 700;
+                overflow: elide;
+                horizontal-alignment: center;
+            }
+            if self.height > 44px && self.width > 80px: Text {
+                text: t.label;
+                color: Theme.text-2;
+                font-size: Theme.fs-small;
+                overflow: elide;
+                horizontal-alignment: center;
+            }
+            if self.height > 62px && self.width > 110px: Text {
+                text: t.detail;
+                color: Theme.text-3;
+                font-size: Theme.fs-small;
+                overflow: elide;
+                horizontal-alignment: center;
+            }
+            if !t.enabled && self.width > 90px: Text {
+                text: "Excluded";
+                color: Theme.warning;
+                font-size: Theme.fs-small;
+                font-weight: 700;
+                horizontal-alignment: center;
+            }
+        }
+        // Shape + colour for state: a lock-like marker when invalid.
+        if t.invalid: Icon { name: "alert"; tint: Theme.error; size: 16px; x: parent.width - 22px; y: 6px; }
+
+        ta := TouchArea {
+            enabled: root.interactive;
+            mouse-cursor: root.interactive ? (self.pressed ? MouseCursor.grabbing : MouseCursor.grab) : MouseCursor.default;
+            pointer-event(e) => {
+                if (e.kind == PointerEventKind.down) {
+                    AppState.layout-select(t.index);
+                    root.dragging = t.device;
+                    root.dx = 0.0;
+                    root.dy = 0.0;
+                } else if (e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel) {
+                    if (root.dragging >= 0) {
+                        AppState.layout-drop(t.device, root.dx, root.dy);
+                    }
+                    root.dragging = -1;
+                    root.dx = 0.0;
+                    root.dy = 0.0;
+                }
+            }
+            moved => {
+                // Offset from where the tile was grabbed, so it never jumps to the cursor.
+                root.dx = (self.mouse-x - self.pressed-x) / (root.scale * 1px);
+                root.dy = (self.mouse-y - self.pressed-y) / (root.scale * 1px);
+                AppState.layout-drag(t.device, root.dx, root.dy);
+            }
+        }
+    }
+
+    // Snap guides.
+    for g in AppState.guides: Rectangle {
+        background: Theme.amber;
+        x: g.vertical ? root.ox + g.pos * root.scale * 1px : root.ox + g.from * root.scale * 1px;
+        y: g.vertical ? root.oy + g.from * root.scale * 1px : root.oy + g.pos * root.scale * 1px;
+        width: g.vertical ? 1px : (g.to - g.from) * root.scale * 1px;
+        height: g.vertical ? (g.to - g.from) * root.scale * 1px : 1px;
+    }
+
+    if AppState.tiles.length == 0: Body {
+        text: "No displays are known yet.";
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+
+    fs := FocusScope {
+        enabled: root.interactive;
+        key-pressed(e) => {
+            if (AppState.selected-tile < 0) { return reject; }
+            if (e.text == Key.LeftArrow) { AppState.layout-nudge(AppState.selected-tile, e.modifiers.shift ? -1.0 : -10.0, 0.0); return accept; }
+            if (e.text == Key.RightArrow) { AppState.layout-nudge(AppState.selected-tile, e.modifiers.shift ? 1.0 : 10.0, 0.0); return accept; }
+            if (e.text == Key.UpArrow) { AppState.layout-nudge(AppState.selected-tile, 0.0, e.modifiers.shift ? -1.0 : -10.0); return accept; }
+            if (e.text == Key.DownArrow) { AppState.layout-nudge(AppState.selected-tile, 0.0, e.modifiers.shift ? 1.0 : 10.0); return accept; }
+            return reject;
+        }
+    }
+    Rectangle {
+        visible: fs.has-focus;
+        border-width: 2px;
+        border-color: Theme.focus;
+        border-radius: Theme.radius-panel;
+    }
+}
+
+export component LayoutPage inherits Rectangle {
+    VerticalLayout {
+        padding: Theme.page-pad;
+        spacing: 16px;
+        HorizontalLayout {
+            spacing: 12px;
+            VerticalLayout {
+                spacing: 4px;
+                Title { text: "Screen layout"; }
+                Body { text: "Drag a computer to where it sits on your desk. Pointer crossings follow what you arrange here."; }
+            }
+            Rectangle { horizontal-stretch: 1; }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            SfButton { icon: "minus"; a11y-label: "Zoom out"; text: ""; clicked => { AppState.zoom = Math.max(0.4, AppState.zoom / 1.25); } }
+            SfButton { icon: "plus"; a11y-label: "Zoom in"; text: ""; clicked => { AppState.zoom = Math.min(4.0, AppState.zoom * 1.25); } }
+            SfButton { icon: "fit"; text: "Fit layout"; clicked => { AppState.zoom = 1.0; AppState.pan-x = 0px; AppState.pan-y = 0px; } }
+            SfButton { text: "Reset view"; kind: "quiet"; clicked => { AppState.zoom = 1.0; AppState.pan-x = 0px; AppState.pan-y = 0px; } }
+            Rectangle { horizontal-stretch: 1; }
+            if AppState.layout-dirty: Badge { kind: "info"; text: "Unapplied changes"; }
+            SfButton { text: "Revert"; enabled: AppState.layout-dirty; clicked => { AppState.layout-revert(); } }
+            SfButton { text: "Apply"; kind: "primary"; enabled: AppState.layout-dirty && AppState.layout-problems.length == 0; clicked => { AppState.layout-apply(); } }
+        }
+        HorizontalLayout {
+            spacing: 16px;
+            LayoutCanvas { interactive: true; user-zoom: AppState.zoom; horizontal-stretch: 1; }
+            Card {
+                width: 272px;
+                VerticalLayout {
+                    padding: 18px;
+                    spacing: 10px;
+                    Section { text: AppState.inspector-title == "" ? "Inspector" : AppState.inspector-title; }
+                    Small { text: AppState.inspector-detail == "" ? "Select a monitor to see its neighbours and crossing options." : AppState.inspector-detail; }
+                    if AppState.inspector-can-toggle: SfSwitch {
+                        label: "Use this monitor";
+                        hint: "Excluded monitors are never entered by the pointer.";
+                        checked: AppState.inspector-enabled;
+                        toggled(on) => { AppState.layout-toggle-tile(AppState.selected-tile, on); }
+                    }
+                    for e[ei] in AppState.edges: Rectangle {
+                        height: ec.preferred-height + 16px;
+                        border-radius: 12px;
+                        background: Theme.elevated;
+                        ec := VerticalLayout {
+                            padding: 10px;
+                            spacing: 4px;
+                            Strong { text: e.side + " edge → " + e.neighbor; }
+                            Small { text: "Boundary span " + e.span; }
+                            SfSwitch {
+                                label: "Allow crossing";
+                                checked: e.enabled;
+                                toggled(on) => { AppState.edge-set(ei, on, e.dwell, e.modifier, e.corners); }
+                            }
+                            SfSwitch {
+                                label: "Hold " + AppState.cross-modifier-name + " to cross";
+                                checked: e.modifier;
+                                toggled(on) => { AppState.edge-set(ei, e.enabled, e.dwell, on, e.corners); }
+                            }
+                            SfSwitch {
+                                label: "Ignore corners";
+                                hint: "Keeps hot corners from switching computers.";
+                                checked: e.corners;
+                                toggled(on) => { AppState.edge-set(ei, e.enabled, e.dwell, e.modifier, on); }
+                            }
+                        }
+                    }
+                    for p in AppState.layout-problems: Rectangle {
+                        background: Theme.error.with-alpha(0.14);
+                        border-radius: 10px;
+                        height: pr.preferred-height + 16px;
+                        pr := HorizontalLayout {
+                            padding: 8px;
+                            spacing: 8px;
+                            Icon { name: "alert"; tint: Theme.error; size: 16px; }
+                            Small { text: p; color: Theme.error; }
+                        }
+                    }
+                    Rectangle { vertical-stretch: 1; }
+                }
+            }
+        }
+    }
+}

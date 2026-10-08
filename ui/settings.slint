@@ -1,0 +1,233 @@
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { Title, Section, Body, Small, Strong, Mono, SfButton, SfSwitch, SfInput, SfSlider, Segment, Card, Badge, Icon } from "components.slint";
+import { ScrollView } from "std-widgets.slint";
+
+component Row inherits Rectangle {
+    in property <string> label;
+    in property <string> hint;
+    height: Math.max(52px, rl.preferred-height + 12px);
+    rl := HorizontalLayout {
+        padding-top: 6px;
+        padding-bottom: 6px;
+        spacing: 16px;
+        VerticalLayout {
+            spacing: 2px;
+            alignment: center;
+            horizontal-stretch: 1;
+            Strong { text: root.label; font-weight: 500; }
+            if root.hint != "": Small { text: root.hint; }
+        }
+        VerticalLayout { alignment: center; @children }
+    }
+}
+
+component Divider inherits Rectangle { height: 1px; background: Theme.border-subtle; }
+
+export component SettingsPage inherits Rectangle {
+    private property <[string]> names: ["General", "Input", "Clipboard", "Files", "Network", "Privacy and security", "Appearance", "Diagnostics"];
+    private property <[string]> icons: ["settings", "layout", "copy", "folder", "link", "shield", "overview", "alert"];
+    private property <bool> confirm-delete: false;
+
+    HorizontalLayout {
+        padding: Theme.page-pad;
+        spacing: 20px;
+        // Section list.
+        VerticalLayout {
+            width: 200px;
+            alignment: start;
+            spacing: 4px;
+            Title { text: "Settings"; }
+            Rectangle { height: 8px; }
+            for n[i] in names: Rectangle {
+                height: 36px;
+                border-radius: 10px;
+                background: AppState.settings-section == i ? Theme.elevated : (t.has-hover ? Theme.elevated.with-alpha(0.55) : transparent);
+                accessible-role: tab;
+                accessible-label: n;
+                accessible-item-selectable: true;
+                accessible-item-selected: AppState.settings-section == i;
+                accessible-action-default => { AppState.settings-section = i; }
+                HorizontalLayout {
+                    padding-left: 12px;
+                    spacing: 10px;
+                    Icon { name: icons[i]; tint: AppState.settings-section == i ? Theme.amber-text : Theme.text-3; size: 16px; y: (parent.height - self.height) / 2; }
+                    Text { text: n; color: AppState.settings-section == i ? Theme.text : Theme.text-2; font-size: Theme.fs-body; font-weight: AppState.settings-section == i ? 600 : 500; vertical-alignment: center; overflow: elide; }
+                }
+                t := TouchArea { clicked => { AppState.settings-section = i; } }
+            }
+        }
+        Card {
+            horizontal-stretch: 1;
+            ScrollView {
+                VerticalLayout {
+                    alignment: start;
+                    padding: 24px;
+                    spacing: 6px;
+
+                    // ── General ──
+                    if AppState.settings-section == 0: VerticalLayout {
+                        spacing: 6px;
+                        Section { text: "General"; }
+                        Row {
+                            label: "Computer name";
+                            hint: "Shown to devices you pair with. It is a label, not an identity.";
+                            SfInput { width: 240px; text: AppState.settings.device-name; label: "Computer name"; accepted(t) => { AppState.set-text("device_name", t); } }
+                        }
+                        Divider {}
+                        SfSwitch { label: "Start paused"; hint: "After launching, nothing is shared until you press Start sharing. Off by default: pairing was your consent."; checked: AppState.settings.start-paused; toggled(on) => { AppState.set-bool("start_paused", on); } }
+                        SfSwitch { label: "Keep running in the menu bar when the window closes"; hint: "The tray or menu-bar item always shows whether sharing is on and can pause it."; checked: AppState.settings.close-to-tray; toggled(on) => { AppState.set-bool("close_to_tray", on); } }
+                        SfSwitch { label: "Start at login"; hint: "Off by default. With Start paused on, it still waits for Start sharing."; checked: AppState.settings.start-at-login; toggled(on) => { AppState.set-bool("start_at_login", on); } }
+                    }
+
+                    // ── Input ──
+                    if AppState.settings-section == 1: VerticalLayout {
+                        spacing: 6px;
+                        Section { text: "Keyboard and mouse"; }
+                        Row {
+                            label: "Pointer speed on other computers";
+                            hint: "Scales mouse movement while controlling another computer.";
+                            HorizontalLayout { spacing: 10px; SfSlider { width: 200px; minimum: 0.5; maximum: 2.0; step: 0.05; value: AppState.settings.sensitivity; label: "Pointer speed"; changed(v) => { AppState.set-float("pointer_sensitivity", v); } } Small { text: Math.round(AppState.settings.sensitivity * 100) + "%"; vertical-alignment: center; } }
+                        }
+                        Row {
+                            label: "Edge dwell";
+                            hint: "Hold the pointer at a screen edge this long before crossing.";
+                            Segment { width: 300px; options: ["Off", "150 ms", "300 ms", "500 ms"]; current: AppState.settings.edge-dwell; label: "Edge dwell"; selected(i) => { AppState.set-int("edge_dwell", i); } }
+                        }
+                        Row {
+                            label: "Edge size";
+                            hint: "How close to the edge counts as pushing against it.";
+                            Segment { width: 240px; options: ["2 pt", "4 pt", "8 pt"]; current: AppState.settings.edge-zone; label: "Edge size"; selected(i) => { AppState.set-int("edge_zone", i); } }
+                        }
+                        SfSwitch { label: "Ignore screen corners"; hint: "Keeps macOS hot corners and similar from switching computers by accident."; checked: AppState.settings.block-corners; toggled(on) => { AppState.set-bool("block_corners", on); } }
+                        SfSwitch { label: "Require a modifier key to cross"; checked: AppState.settings.require-modifier; toggled(on) => { AppState.set-bool("require_modifier", on); } }
+                        Row {
+                            label: "Modifier key";
+                            Segment { width: 300px; options: ["Shift", "Ctrl", "Alt", "Meta"]; current: AppState.settings.cross-modifier; label: "Modifier key"; selected(i) => { AppState.set-int("cross_modifier", i); } }
+                        }
+                        SfSwitch { label: "Stay on this computer"; hint: "The pointer never leaves, even at a mapped edge. Use this for full-screen games and presentations."; checked: AppState.settings.stay-local; toggled(on) => { AppState.set-bool("stay_local", on); } }
+                        SfSwitch { label: "Translate ⌘ and Ctrl shortcuts between Mac and PC"; hint: "Copy, paste, undo and similar chords. Terminal programs may need it off. Per-device overrides are in Devices."; checked: AppState.settings.shortcut-translation; toggled(on) => { AppState.set-bool("shortcut_translation", on); } }
+                        Divider {}
+                        Section { text: "Shortcuts"; }
+                        Row {
+                            label: "Emergency stop";
+                            hint: AppState.panic-live ? "Active now. Returns control, releases held keys and pauses sharing." : "Becomes active when sharing is on. The menu-bar item and the Pause button always work.";
+                            SfInput { width: 240px; mono: true; text: AppState.settings.panic-hotkey; label: "Emergency stop shortcut"; accepted(t) => { AppState.set-text("panic_hotkey", t); } }
+                        }
+                        Row {
+                            label: "Switch computers";
+                            hint: "Moves to the next connected computer, or back.";
+                            SfInput { width: 240px; mono: true; text: AppState.settings.switch-hotkey; label: "Switch shortcut"; accepted(t) => { AppState.set-text("switch_hotkey", t); } }
+                        }
+                        SfSwitch { label: "Resume automatically after unlocking"; hint: "Off: sharing stays paused after a lock until you resume it. Recommended."; checked: AppState.settings.resume-after-lock; toggled(on) => { AppState.set-bool("resume_after_lock", on); } }
+                    }
+
+                    // ── Clipboard ──
+                    if AppState.settings-section == 2: VerticalLayout {
+                        spacing: 6px;
+                        Section { text: "Clipboard"; }
+                        Body { text: "Clipboard sharing is off for every device until you turn it on in Devices. Anything you copy while it is on — including passwords — can be sent to those computers. Synkflow skips items that your password manager marks private, but not every program does."; }
+                        SfSwitch { label: "Pause clipboard sharing"; hint: "Stops sending and receiving immediately, without changing per-device choices."; checked: AppState.settings.clipboard-paused; toggled(on) => { AppState.set-clipboard-paused(on); } }
+                        Small { text: "Clipboard content is never stored, logged, or kept after it is applied. Rich text and HTML are not shared; text and images are."; }
+                    }
+
+                    // ── Files ──
+                    if AppState.settings-section == 3: VerticalLayout {
+                        spacing: 6px;
+                        Section { text: "Files"; }
+                        Row {
+                            label: "Receive folder";
+                            hint: AppState.settings.inbox;
+                            HorizontalLayout { spacing: 8px; SfButton { text: "Choose…"; clicked => { AppState.choose-inbox(); } } SfButton { text: "Open"; icon: "folder"; clicked => { AppState.open-inbox(); } } }
+                        }
+                        SfSwitch { label: "Decline all incoming files"; hint: "Overrides every device's file permission."; checked: AppState.settings.accept-never; toggled(on) => { AppState.set-bool("accept_never", on); } }
+                        Body { text: "Every incoming transfer asks first unless you enabled automatic acceptance for one device. Each transfer is saved in its own new folder; files are checked with SHA-256 and never overwrite or open anything."; }
+                    }
+
+                    // ── Network ──
+                    if AppState.settings-section == 4: VerticalLayout {
+                        spacing: 6px;
+                        Section { text: "Network"; }
+                        SfSwitch { label: "Discover nearby computers"; hint: "Announces this computer's name and a short identity hint on your local network (mDNS), and listens for others. Turn off to pair by address only."; checked: AppState.settings.discovery; toggled(on) => { AppState.set-bool("discovery", on); } }
+                        SfSwitch { label: "Include VPN and virtual interfaces"; hint: "Off by default: a VPN or container network is not your desk's network."; checked: AppState.settings.include-tunnels; toggled(on) => { AppState.set-bool("include_tunnels", on); } }
+                        Row {
+                            label: "Port";
+                            hint: "Where this computer listens (TCP). 0 picks a free port. Currently " + AppState.port-label + ". Restart to apply a change.";
+                            SfInput { width: 110px; mono: true; text: AppState.settings.port; label: "Port"; accepted(t) => { AppState.set-text("port", t); } }
+                        }
+                        Divider {}
+                        Strong { text: "Interfaces"; }
+                        Small { text: "None selected means every suitable interface. Tunnels are marked."; }
+                        for itf in AppState.interfaces: SfSwitch {
+                            label: itf.name + (itf.tunnel ? "  (VPN / virtual)" : "");
+                            checked: itf.selected;
+                            toggled(on) => { AppState.set-bool("iface:" + itf.name, on); }
+                        }
+                        if AppState.interfaces.length == 0: Small { text: "No network interfaces are up."; }
+                        Body { text: "An address that looks private does not make a network trustworthy. Synkflow trusts only the cryptographic identity of devices you approved."; }
+                    }
+
+                    // ── Privacy and security ──
+                    if AppState.settings-section == 5: VerticalLayout {
+                        spacing: 8px;
+                        Section { text: "Privacy and security"; }
+                        for line in [
+                            "No account, no cloud relay, no analytics, no telemetry, no update checks, no advertising.",
+                            "Everything travels directly between your computers over TLS 1.3 with mutual authentication. There is no plaintext fallback.",
+                            "A device is trusted only after you compare full fingerprints on both screens and both people approve.",
+                            "Transport encryption does not protect against software already running on a participating computer.",
+                            "Local administrators and physical access are outside what Synkflow can defend.",
+                        ]: HorizontalLayout { spacing: 10px; Icon { name: "check"; tint: Theme.success; size: 16px; y: 2px; } Body { text: line; } }
+                        Divider {}
+                        Strong { text: "This computer's identity"; }
+                        Mono { text: AppState.local-fingerprint; }
+                        Small { text: "Key storage: " + AppState.store-label; }
+                        HorizontalLayout { SfButton { text: "Copy fingerprint"; icon: "copy"; clicked => { AppState.copy-text(AppState.local-fingerprint); } } }
+                        Divider {}
+                        Strong { text: "Delete local configuration and trust"; }
+                        Small { text: "Forgets every paired device, deletes this computer's identity key and settings, then quits. Other computers will have to pair again."; }
+                        if !confirm-delete: HorizontalLayout { SfButton { text: "Delete everything…"; kind: "danger"; clicked => { root.confirm-delete = true; } } }
+                        if confirm-delete: HorizontalLayout {
+                            spacing: 8px;
+                            SfButton { text: "Keep my data"; clicked => { root.confirm-delete = false; } }
+                            SfButton { text: "Delete and quit"; kind: "danger"; clicked => { AppState.delete-all-data(); } }
+                        }
+                    }
+
+                    // ── Appearance ──
+                    if AppState.settings-section == 6: VerticalLayout {
+                        spacing: 6px;
+                        Section { text: "Appearance"; }
+                        Row { label: "Theme"; Segment { width: 260px; options: ["System", "Dark", "Light"]; current: AppState.settings.theme; label: "Theme"; selected(i) => { AppState.set-int("theme", i); } } }
+                        Row { label: "Text size"; hint: "Scales text throughout the app."; Segment { width: 260px; options: ["100%", "115%", "130%"]; current: AppState.settings.text-scale; label: "Text size"; selected(i) => { AppState.set-int("text_scale", i); } } }
+                        Row { label: "Reduce motion"; hint: "System follows your operating system setting."; Segment { width: 260px; options: ["System", "On", "Off"]; current: AppState.settings.motion; label: "Reduce motion"; selected(i) => { AppState.set-int("motion", i); } } }
+                        Row { label: "Reduce transparency"; hint: "Solid surfaces and no background washes."; Segment { width: 260px; options: ["System", "On", "Off"]; current: AppState.settings.transparency; label: "Reduce transparency"; selected(i) => { AppState.set-int("transparency", i); } } }
+                    }
+
+                    // ── Diagnostics ──
+                    if AppState.settings-section == 7: VerticalLayout {
+                        spacing: 8px;
+                        Section { text: "Diagnostics"; }
+                        Row { label: "Log level"; hint: "Applies the next time Synkflow starts. The log is the file synkflow.log in the settings folder. It names devices and network addresses, never clipboard content, file contents or full paths."; Segment { width: 300px; options: ["Error", "Warn", "Info", "Debug"]; current: AppState.settings.log-level; label: "Log level"; selected(i) => { AppState.set-int("log_level", i); } } }
+                        Divider {}
+                        Strong { text: "What this computer can do right now"; }
+                        for c in AppState.capability-matrix: HorizontalLayout {
+                            spacing: 10px;
+                            Icon { name: c.ok ? "check" : "alert"; tint: c.ok ? Theme.success : Theme.warning; size: 16px; y: 2px; }
+                            VerticalLayout { horizontal-stretch: 1; spacing: 1px; Strong { text: c.name; font-weight: 500; } Small { text: c.status; } }
+                        }
+                        Divider {}
+                        Mono { text: AppState.diagnostics-text; font-size: Theme.fs-small; color: Theme.text-2; }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            alignment: start;
+                            SfButton { text: "Copy diagnostics"; icon: "copy"; clicked => { AppState.copy-diagnostics(); } }
+                            SfButton { text: "Open settings folder"; kind: "secondary"; clicked => { AppState.open-settings-folder(); } }
+                        }
+                        Small { text: "Copy diagnostics includes the most recent log lines. Paste it when asking for help."; }
+                    }
+                }
+            }
+        }
+    }
+}

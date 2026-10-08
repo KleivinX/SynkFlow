@@ -1,0 +1,134 @@
+import { Theme } from "theme.slint";
+import { AppState, TransferRow } from "state.slint";
+import { Title, Section, Body, Small, Strong, SfButton, Segment, Card, Badge, Icon, Progress } from "components.slint";
+import { ScrollView } from "std-widgets.slint";
+
+component TransferItem inherits Rectangle {
+    in property <TransferRow> t;
+    height: col.preferred-height + 8px;
+    border-radius: 14px;
+    background: t.can-accept ? Theme.amber.with-alpha(Theme.dark ? 0.10 : 0.16) : Theme.surface;
+    border-width: 1px;
+    border-color: t.can-accept ? Theme.amber-deep : Theme.border-subtle;
+    col := VerticalLayout {
+        padding: 14px;
+        spacing: 8px;
+        HorizontalLayout {
+            spacing: 10px;
+            Icon { name: t.incoming ? "folder" : "send"; tint: Theme.purple; size: 20px; y: 2px; }
+            VerticalLayout {
+                spacing: 2px;
+                horizontal-stretch: 1;
+                Strong { text: t.title; overflow: elide; wrap: no-wrap; }
+                Small { text: t.subtitle; }
+            }
+            Badge { kind: t.kind; text: t.status; }
+        }
+        if t.status == "Transferring" || t.status == "Verifying" || t.status == "Complete": VerticalLayout {
+            spacing: 4px;
+            Progress { value: t.progress; label: t.title; }
+            HorizontalLayout {
+                spacing: 12px;
+                Small { text: t.bytes; horizontal-stretch: 1; }
+                if t.speed != "": Small { text: t.speed; }
+                if t.eta != "": Small { text: t.eta; }
+            }
+        }
+        if t.error != "": Small { text: t.error; color: Theme.error; }
+        if t.folder != "" && t.status == "Complete": Small { text: "Saved in the folder \"" + t.folder + "\" inside your receive folder. Nothing was opened or run."; }
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: end;
+            if t.can-accept: SfButton { text: "Decline"; clicked => { AppState.decline-transfer(t.id); } }
+            if t.can-accept: SfButton { text: "Accept"; kind: "primary"; clicked => { AppState.accept-transfer(t.id); } }
+            if t.can-cancel: SfButton { text: "Cancel"; clicked => { AppState.cancel-transfer(t.id); } }
+            if t.can-retry: SfButton { text: "Retry"; clicked => { AppState.retry-transfer(t.id); } }
+            if t.incoming && t.status == "Complete": SfButton { text: "Open receive folder"; icon: "folder"; clicked => { AppState.open-inbox(); } }
+        }
+    }
+}
+
+export component TransfersPage inherits Rectangle {
+    private property <bool> can-send: AppState.target-names.length > 0;
+    VerticalLayout {
+        padding: Theme.page-pad;
+        spacing: 16px;
+        HorizontalLayout {
+            spacing: 12px;
+            VerticalLayout {
+                spacing: 4px;
+                horizontal-stretch: 1;
+                Title { text: "Transfers"; }
+                Body { text: "Send files to a connected computer. The other side approves every transfer, and nothing is opened or run."; }
+            }
+            SfButton { text: "Open receive folder"; icon: "folder"; clicked => { AppState.open-inbox(); } y: 4px; }
+        }
+
+        // Destination + drop zone.
+        Card {
+            height: dz.preferred-height + 8px;
+            border-color: AppState.drop-hover ? Theme.amber : Theme.border-subtle;
+            border-width: AppState.drop-hover ? 2px : 1px;
+            animate border-color { duration: Theme.t-fast; }
+            dz := VerticalLayout {
+                padding: 18px;
+                spacing: 12px;
+                if !can-send: HorizontalLayout {
+                    spacing: 10px;
+                    Icon { name: "devices"; tint: Theme.text-3; size: 22px; }
+                    Body { text: "No connected computer to send to. Connect a paired device first."; }
+                }
+                if can-send: VerticalLayout {
+                    spacing: 12px;
+                    Small { text: "Send to"; font-weight: 700; }
+                    Segment { options: AppState.target-names; current <=> AppState.target-index; label: "Destination computer"; }
+                    HorizontalLayout {
+                        spacing: 12px;
+                        alignment: stretch;
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            height: 72px;
+                            border-radius: 12px;
+                            background: AppState.drop-hover ? Theme.amber.with-alpha(0.14) : Theme.canvas;
+                            border-width: 1px;
+                            border-color: AppState.drop-hover ? Theme.amber : Theme.border-control;
+                            animate background { duration: Theme.t-fast; }
+                            accessible-role: groupbox;
+                            accessible-label: "Drop zone. Drop files from your file manager here to send them.";
+                            HorizontalLayout {
+                                alignment: center;
+                                spacing: 10px;
+                                Icon { name: "transfers"; tint: Theme.amber-text; size: 22px; y: (parent.height - self.height) / 2; }
+                                Body { text: AppState.drop-hover ? "Release to send" : "Drop files here"; vertical-alignment: center; color: Theme.text; }
+                            }
+                        }
+                        SfButton { text: "Choose files…"; icon: "send"; kind: "primary"; y: 18px; clicked => { AppState.pick-files(); } }
+                    }
+                    Small { text: "Folders can't be sent yet — send the files inside. Resuming an interrupted transfer isn't supported; you can retry from the start."; }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 8px;
+            Section { text: "Activity"; horizontal-stretch: 1; }
+            SfButton { text: "Clear history"; kind: "quiet"; enabled: AppState.transfers.length > 0; clicked => { AppState.clear-history(); } }
+        }
+        ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                alignment: start;
+                spacing: 10px;
+                if AppState.transfers.length == 0: Rectangle {
+                    height: 96px;
+                    border-radius: 14px;
+                    background: Theme.surface;
+                    border-width: 1px;
+                    border-color: Theme.border-subtle;
+                    Body { text: "No transfers yet. History is kept only while Synkflow is open; full file paths are never stored."; horizontal-alignment: center; vertical-alignment: center; x: 20px; width: parent.width - 40px; }
+                }
+                for t in AppState.transfers: TransferItem { t: t; }
+            }
+        }
+    }
+}

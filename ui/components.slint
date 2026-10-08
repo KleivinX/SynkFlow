@@ -1,0 +1,568 @@
+// Shared components: small, calm, keyboard-reachable, never colour-only.
+
+import { Theme } from "theme.slint";
+
+// ───────────────────────────── text styles ─────────────────────────────
+
+export component Title inherits Text {
+    color: Theme.text;
+    font-size: Theme.fs-title;
+    font-weight: 700;
+    letter-spacing: Theme.track-title;
+    wrap: word-wrap;
+    accessible-role: AccessibleRole.text;
+}
+
+export component Section inherits Text {
+    color: Theme.text;
+    font-size: Theme.fs-section;
+    font-weight: 600;
+    letter-spacing: Theme.track-section;
+    wrap: word-wrap;
+    accessible-role: AccessibleRole.text;
+}
+
+export component Body inherits Text {
+    color: Theme.text-2;
+    font-size: Theme.fs-body;
+    wrap: word-wrap;
+    accessible-role: AccessibleRole.text;
+}
+
+export component Strong inherits Text {
+    color: Theme.text;
+    font-size: Theme.fs-body;
+    font-weight: 600;
+    wrap: word-wrap;
+    accessible-role: AccessibleRole.text;
+}
+
+export component Small inherits Text {
+    color: Theme.text-3;
+    font-size: Theme.fs-small;
+    letter-spacing: Theme.track-small;
+    wrap: word-wrap;
+    accessible-role: AccessibleRole.text;
+}
+
+export component Mono inherits Text {
+    color: Theme.text;
+    font-size: Theme.fs-mono;
+    font-family: "Menlo";
+    wrap: word-wrap;
+    accessible-role: AccessibleRole.text;
+}
+
+// ───────────────────────────── icons (original, line-drawn) ─────────────────────────────
+
+export component Icon inherits Rectangle {
+    in property <string> name;
+    in property <color> tint: Theme.text-2;
+    in property <length> size: 18px;
+    width: size;
+    height: size;
+    // Each path is drawn in a 24×24 box.
+    for d[i] in [
+        { n: "overview", c: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" },
+        { n: "layout", c: "M3 5h10v7H3zM11 13h10v7H11z" },
+        { n: "devices", c: "M5 6h14v9H5zM2.5 18.5h19" },
+        { n: "transfers", c: "M8 4v13M4 13l4 4 4-4M16 20V7M12 11l4-4 4 4" },
+        { n: "settings", c: "M4 7h9M17 7h3M4 17h3M11 17h9M15 4v6M9 14v6" },
+        { n: "plus", c: "M12 5v14M5 12h14" },
+        { n: "minus", c: "M5 12h14" },
+        { n: "fit", c: "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" },
+        { n: "check", c: "M5 12.5l4.5 4.5L19 7.5" },
+        { n: "alert", c: "M12 4l9.5 16.5h-19zM12 10v4.5M12 17.5v.5" },
+        { n: "pause", c: "M8.5 5v14M15.5 5v14" },
+        { n: "play", c: "M8 5l11 7-11 7z" },
+        { n: "send", c: "M4 12l16-8-6 16-2.5-6.5z" },
+        { n: "x", c: "M6 6l12 12M18 6L6 18" },
+        { n: "folder", c: "M3 7h6.5l2 2H21v10H3z" },
+        { n: "lock", c: "M6.5 11h11v8.5h-11zM8.5 11V8a3.5 3.5 0 017 0v3" },
+        { n: "ring", c: "M12 5a7 7 0 100 14 7 7 0 000-14z" },
+        { n: "dot", c: "M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7z" },
+        { n: "copy", c: "M8 8h11v11H8zM5 15V5h10" },
+        { n: "shield", c: "M12 3.5l7 2.5v5.5c0 4.2-3 7.4-7 9-4-1.6-7-4.8-7-9V6z" },
+        { n: "link", c: "M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1" },
+    ]: Path {
+        visible: d.n == root.name;
+        width: root.size;
+        height: root.size;
+        viewbox-width: 24;
+        viewbox-height: 24;
+        commands: d.c;
+        stroke: root.tint;
+        stroke-width: 1.7px;
+        stroke-line-cap: round;
+        stroke-line-join: round;
+        fill: (d.n == "dot" || d.n == "play") ? root.tint : transparent;
+    }
+}
+
+// ───────────────────────────── buttons ─────────────────────────────
+
+export component SfButton inherits Rectangle {
+    in property <string> text;
+    in property <string> icon;
+    // primary | secondary | quiet | danger
+    in property <string> kind: "secondary";
+    in property <bool> enabled: true;
+    in property <string> a11y-label: text;
+    callback clicked();
+
+    private property <bool> pressed: ta.pressed;
+    private property <color> fg: kind == "primary" ? Theme.on-accent : kind == "danger" ? Theme.error : kind == "quiet" ? Theme.lavender : Theme.text;
+
+    min-width: 36px;
+    height: 36px;
+    preferred-width: lay.preferred-width;
+    max-width: lay.preferred-width;
+    border-radius: Theme.radius-control;
+    background: kind == "primary" ? (pressed ? Theme.amber-deep : ta.has-hover ? #FFCE8A : Theme.amber)
+        : kind == "quiet" ? (pressed ? Theme.elevated : ta.has-hover ? Theme.elevated.with-alpha(0.7) : transparent)
+        : (pressed ? Theme.elevated.darker(0.1) : ta.has-hover ? Theme.elevated.brighter(0.08) : Theme.elevated);
+    border-width: (kind == "secondary" || kind == "danger") ? 1px : 0px;
+    border-color: kind == "danger" ? Theme.error : Theme.border-control;
+    opacity: enabled ? 1.0 : 0.5;
+    // Feedback is immediate on press, a touch slower on release.
+    animate background { duration: pressed ? 0ms : Theme.t-fast; easing: ease-out; }
+
+    accessible-role: button;
+    accessible-label: a11y-label;
+    accessible-enabled: enabled;
+    accessible-action-default => { if (root.enabled) { root.clicked(); } }
+
+    lay := HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 14px;
+        spacing: 8px;
+        alignment: center;
+        if root.icon != "": Icon { name: root.icon; tint: root.fg; size: 16px; y: (root.height - self.height) / 2; }
+        Text {
+            text: root.text;
+            color: root.fg;
+            font-size: Theme.fs-body;
+            font-weight: 600;
+            vertical-alignment: center;
+            horizontal-alignment: center;
+            visible: root.text != "";
+        }
+    }
+    ta := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+    fs := FocusScope {
+        enabled: root.enabled;
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == "\n") { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+    // Keyboard focus ring, offset so it never touches the label.
+    Rectangle {
+        visible: fs.has-focus;
+        x: -3px;
+        y: -3px;
+        width: root.width + 6px;
+        height: root.height + 6px;
+        border-radius: Theme.radius-control + 3px;
+        border-width: 2px;
+        border-color: Theme.focus;
+    }
+}
+
+// ───────────────────────────── switch ─────────────────────────────
+
+export component SfSwitch inherits Rectangle {
+    in-out property <bool> checked;
+    in property <string> label;
+    in property <string> hint;
+    in property <bool> enabled: true;
+    callback toggled(bool);
+
+    min-height: 44px;
+    opacity: enabled ? 1.0 : 0.5;
+    accessible-role: switch;
+    accessible-label: label;
+    accessible-description: hint;
+    accessible-checked: checked;
+    accessible-enabled: enabled;
+    accessible-action-default => { root.flip(); }
+
+    function flip() {
+        if (root.enabled) {
+            root.checked = !root.checked;
+            root.toggled(root.checked);
+        }
+    }
+
+    HorizontalLayout {
+        spacing: 16px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+        VerticalLayout {
+            spacing: 2px;
+            alignment: center;
+            Strong { text: root.label; font-weight: 500; }
+            if root.hint != "": Small { text: root.hint; }
+        }
+        Rectangle {
+            width: 44px;
+            height: 26px;
+            y: (parent.height - self.height) / 2;
+            border-radius: 13px;
+            background: root.checked ? Theme.amber : Theme.elevated;
+            border-width: 1px;
+            border-color: root.checked ? Theme.amber : Theme.border-control;
+            animate background { duration: Theme.t-fast; easing: ease-out; }
+            Rectangle {
+                width: 20px;
+                height: 20px;
+                y: 3px;
+                x: root.checked ? 21px : 3px;
+                border-radius: 10px;
+                background: root.checked ? Theme.on-accent : Theme.text-2;
+                animate x { duration: Theme.t-fast; easing: ease-out; }
+                // Not colour alone: the knob carries a check mark when on.
+                Icon { visible: root.checked; name: "check"; tint: Theme.amber; size: 12px; x: 4px; y: 4px; }
+            }
+        }
+    }
+    ta := TouchArea { enabled: root.enabled; clicked => { root.flip(); } }
+    fs := FocusScope {
+        enabled: root.enabled;
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == "\n") { root.flip(); return accept; }
+            return reject;
+        }
+    }
+    Rectangle {
+        visible: fs.has-focus;
+        border-width: 2px;
+        border-color: Theme.focus;
+        border-radius: 8px;
+    }
+}
+
+// ───────────────────────────── text field ─────────────────────────────
+
+export component SfInput inherits Rectangle {
+    in-out property <string> text;
+    in property <string> placeholder;
+    in property <string> label;
+    in property <bool> mono: false;
+    callback accepted(string);
+    callback edited(string);
+
+    min-width: 120px;
+    height: 36px;
+    border-radius: Theme.radius-control;
+    background: Theme.surface;
+    border-width: ti.has-focus ? 2px : 1px;
+    border-color: ti.has-focus ? Theme.focus : Theme.border-control;
+    accessible-role: text-input;
+    accessible-label: label != "" ? label : placeholder;
+
+    Rectangle {
+        x: 12px;
+        width: parent.width - 24px;
+        clip: true;
+        ti := TextInput {
+            width: parent.width;
+            height: parent.height;
+            text <=> root.text;
+            font-size: Theme.fs-body;
+            font-family: root.mono ? "Menlo" : "";
+            color: Theme.text;
+            vertical-alignment: center;
+            single-line: true;
+            selection-background-color: Theme.violet-deep;
+            selection-foreground-color: #FFFFFF;
+            accepted => { root.accepted(self.text); }
+            edited => { root.edited(self.text); }
+        }
+        Text {
+            visible: root.text == "";
+            text: root.placeholder;
+            color: Theme.text-3;
+            font-size: Theme.fs-body;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
+// ───────────────────────────── surfaces ─────────────────────────────
+
+export component Card inherits Rectangle {
+    in property <length> pad: 20px;
+    in property <bool> raised: false;
+    background: raised ? Theme.elevated : Theme.surface;
+    border-radius: Theme.radius-panel;
+    border-width: 1px;
+    border-color: Theme.border-subtle;
+    @children
+}
+
+// ───────────────────────────── status badge ─────────────────────────────
+
+// kind: ok | warn | err | idle | info. A shape *and* a word, never colour alone.
+export component Badge inherits Rectangle {
+    in property <string> kind: "idle";
+    in property <string> text;
+    private property <color> tone: kind == "ok" ? Theme.success : kind == "warn" ? Theme.warning : kind == "err" ? Theme.error : kind == "info" ? Theme.purple : Theme.text-3;
+    private property <string> shape: kind == "ok" ? "check" : kind == "warn" ? "alert" : kind == "err" ? "x" : kind == "info" ? "dot" : "ring";
+    height: 24px;
+    preferred-width: row.preferred-width;
+    max-width: row.preferred-width;
+    border-radius: 12px;
+    background: tone.with-alpha(Theme.dark ? 0.16 : 0.12);
+    accessible-role: AccessibleRole.text;
+    accessible-label: text;
+    row := HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 10px;
+        spacing: 5px;
+        alignment: center;
+        Icon { name: root.shape; tint: root.tone; size: 14px; y: (root.height - self.height) / 2; }
+        Text { text: root.text; color: root.tone; font-size: Theme.fs-small; font-weight: 600; vertical-alignment: center; }
+    }
+}
+
+// ───────────────────────────── navigation item ─────────────────────────────
+
+export component NavItem inherits Rectangle {
+    in property <string> text;
+    in property <string> icon;
+    in property <bool> selected;
+    in property <int> badge: 0;
+    callback clicked();
+    height: 38px;
+    border-radius: 10px;
+    background: selected ? Theme.elevated : (ta.has-hover ? Theme.elevated.with-alpha(0.55) : transparent);
+    animate background { duration: Theme.t-fast; easing: ease-out; }
+    accessible-role: tab;
+    accessible-label: text;
+    accessible-item-selectable: true;
+    accessible-item-selected: selected;
+    accessible-action-default => { root.clicked(); }
+    // Amber marks the active destination (a bar, plus the bolder label).
+    Rectangle {
+        visible: root.selected;
+        x: 0px;
+        y: 9px;
+        width: 3px;
+        height: parent.height - 18px;
+        border-radius: 2px;
+        background: Theme.amber;
+    }
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 10px;
+        spacing: 10px;
+        Icon { name: root.icon; tint: root.selected ? Theme.amber-text : Theme.text-2; size: 18px; y: (root.height - self.height) / 2; }
+        Text {
+            text: root.text;
+            color: root.selected ? Theme.text : Theme.text-2;
+            font-size: Theme.fs-body;
+            font-weight: root.selected ? 600 : 500;
+            vertical-alignment: center;
+        }
+        if root.badge > 0: Rectangle {
+            width: 20px;
+            height: 20px;
+            y: (root.height - self.height) / 2;
+            border-radius: 10px;
+            background: Theme.amber;
+            Text { text: root.badge; color: Theme.on-accent; font-size: 11px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+        }
+    }
+    ta := TouchArea { clicked => { root.clicked(); } }
+    fs := FocusScope {
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == "\n") { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+    Rectangle {
+        visible: fs.has-focus;
+        border-width: 2px;
+        border-color: Theme.focus;
+        border-radius: 10px;
+    }
+}
+
+// ───────────────────────────── progress ─────────────────────────────
+
+// Determinate only. Never animates on its own; amber fill.
+export component Progress inherits Rectangle {
+    in property <float> value;
+    in property <string> label;
+    height: 8px;
+    border-radius: 4px;
+    background: Theme.elevated;
+    border-width: 1px;
+    border-color: Theme.border-subtle;
+    accessible-role: progress-indicator;
+    accessible-label: label;
+    accessible-value: Math.round(value * 100);
+    accessible-value-minimum: 0;
+    accessible-value-maximum: 100;
+    Rectangle {
+        x: 0px;
+        width: Math.max(0.0, Math.min(1.0, root.value)) * parent.width;
+        height: parent.height;
+        border-radius: 4px;
+        background: Theme.amber-deep;
+        animate width { duration: Theme.t-fast; easing: ease-out; }
+    }
+}
+
+// ───────────────────────────── segmented control ─────────────────────────────
+
+export component Segment inherits Rectangle {
+    in property <[string]> options;
+    in-out property <int> current;
+    in property <string> label;
+    callback selected(int);
+    height: 36px;
+    border-radius: Theme.radius-control;
+    background: Theme.surface;
+    border-width: 1px;
+    border-color: Theme.border-control;
+    accessible-role: tab-list;
+    accessible-label: label;
+    HorizontalLayout {
+        padding: 3px;
+        spacing: 2px;
+        for opt[i] in root.options: Rectangle {
+            border-radius: Theme.radius-control - 3px;
+            background: root.current == i ? Theme.amber : (t.has-hover ? Theme.elevated : transparent);
+            animate background { duration: Theme.t-fast; easing: ease-out; }
+            accessible-role: tab;
+            accessible-label: opt;
+            accessible-item-selectable: true;
+            accessible-item-selected: root.current == i;
+            accessible-action-default => { root.current = i; root.selected(i); }
+            Text {
+                text: opt;
+                color: root.current == i ? Theme.on-accent : Theme.text-2;
+                font-size: Theme.fs-body;
+                font-weight: root.current == i ? 700 : 500;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+            t := TouchArea { clicked => { root.current = i; root.selected(i); } }
+        }
+    }
+}
+
+// ───────────────────────────── fingerprint ─────────────────────────────
+
+// Full SHA-256, four lines of four groups, monospaced for comparison.
+export component FingerprintBlock inherits Rectangle {
+    in property <string> value;
+    in property <string> caption;
+    background: Theme.canvas;
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: Theme.border-subtle;
+    min-width: 210px;
+    preferred-height: col.preferred-height + 24px;
+    accessible-role: AccessibleRole.text;
+    accessible-label: caption + ": " + value;
+    col := VerticalLayout {
+        padding: 12px;
+        spacing: 6px;
+        Small { text: root.caption; }
+        Mono { text: root.value; letter-spacing: 0.5px; }
+    }
+}
+
+// ───────────────────────────── slider ─────────────────────────────
+
+export component SfSlider inherits Rectangle {
+    in-out property <float> value: 1.0;
+    in property <float> minimum: 0.0;
+    in property <float> maximum: 1.0;
+    in property <float> step: 0.05;
+    in property <string> label;
+    callback changed(float);
+    height: 28px;
+    accessible-role: slider;
+    accessible-label: label;
+    accessible-value: value;
+    accessible-value-minimum: minimum;
+    accessible-value-maximum: maximum;
+    accessible-value-step: step;
+
+    private property <float> frac: (value - minimum) / (maximum - minimum);
+    function set(f: float) {
+        root.value = Math.round((minimum + Math.max(0.0, Math.min(1.0, f)) * (maximum - minimum)) / step) * step;
+        root.changed(root.value);
+    }
+
+    Rectangle {
+        y: (parent.height - self.height) / 2;
+        height: 6px;
+        border-radius: 3px;
+        background: Theme.elevated;
+        border-width: 1px;
+        border-color: Theme.border-control;
+        Rectangle { x: 0px; width: root.frac * root.width; height: parent.height; border-radius: 3px; background: Theme.amber-deep; }
+    }
+    Rectangle {
+        x: root.frac * (parent.width - self.width);
+        y: (parent.height - self.height) / 2;
+        width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        background: Theme.amber;
+        border-width: ta.pressed ? 3px : 2px;
+        border-color: Theme.canvas;
+    }
+    ta := TouchArea {
+        pointer-event(e) => { if (e.kind == PointerEventKind.down) { root.set((self.mouse-x - 10px) / (root.width - 20px)); } }
+        moved => { root.set((self.mouse-x - 10px) / (root.width - 20px)); }
+    }
+    fs := FocusScope {
+        key-pressed(e) => {
+            if (e.text == Key.LeftArrow || e.text == Key.DownArrow) { root.set(root.frac - root.step / (root.maximum - root.minimum)); return accept; }
+            if (e.text == Key.RightArrow || e.text == Key.UpArrow) { root.set(root.frac + root.step / (root.maximum - root.minimum)); return accept; }
+            return reject;
+        }
+    }
+    Rectangle { visible: fs.has-focus; border-width: 2px; border-color: Theme.focus; border-radius: 8px; }
+}
+
+// ───────────────────────────── status card ─────────────────────────────
+
+export component StatusCard inherits Rectangle {
+    in property <string> title;
+    in property <string> value;
+    in property <string> caption;
+    in property <string> icon;
+    in property <string> kind: "idle";
+    background: Theme.surface;
+    border-radius: Theme.radius-panel;
+    border-width: 1px;
+    border-color: Theme.border-subtle;
+    min-height: 104px;
+    accessible-role: groupbox;
+    accessible-label: title + ": " + value + ". " + caption;
+    VerticalLayout {
+        padding: 16px;
+        spacing: 6px;
+        HorizontalLayout {
+            spacing: 8px;
+            Icon { name: root.icon; tint: root.kind == "ok" ? Theme.success : root.kind == "warn" ? Theme.warning : root.kind == "err" ? Theme.error : Theme.purple; size: 18px; }
+            Small { text: root.title; font-weight: 700; horizontal-stretch: 1; }
+        }
+        Text { text: root.value; color: Theme.text; font-size: 20px * Theme.text-scale; font-weight: 700; letter-spacing: -0.2px; overflow: elide; }
+        Small { text: root.caption; }
+    }
+}

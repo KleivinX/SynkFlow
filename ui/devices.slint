@@ -1,0 +1,191 @@
+import { Theme } from "theme.slint";
+import { AppState, PeerRow } from "state.slint";
+import { Title, Section, Body, Small, Strong, Mono, SfButton, SfSwitch, SfInput, Segment, Card, Badge, Icon, FingerprintBlock } from "components.slint";
+import { ScrollView } from "std-widgets.slint";
+
+component DeviceListRow inherits Rectangle {
+    in property <PeerRow> peer;
+    in property <bool> selected;
+    callback clicked();
+    height: 58px;
+    border-radius: 12px;
+    background: selected ? Theme.elevated : (ta.has-hover ? Theme.elevated.with-alpha(0.55) : transparent);
+    border-width: selected ? 1px : 0px;
+    border-color: Theme.border-control;
+    animate background { duration: Theme.t-fast; easing: ease-out; }
+    accessible-role: list-item;
+    accessible-label: peer.label + ", " + peer.status;
+    accessible-item-selectable: true;
+    accessible-item-selected: selected;
+    accessible-action-default => { root.clicked(); }
+    HorizontalLayout {
+        padding: 10px;
+        spacing: 10px;
+        Icon { name: "devices"; tint: peer.online ? Theme.purple : Theme.text-3; size: 22px; y: (parent.height - self.height) / 2; }
+        VerticalLayout {
+            alignment: center;
+            spacing: 2px;
+            horizontal-stretch: 1;
+            Strong { text: peer.label; overflow: elide; wrap: no-wrap; }
+            Small { text: peer.platform; overflow: elide; wrap: no-wrap; }
+        }
+        Badge { kind: peer.kind; text: peer.status; y: (parent.height - self.height) / 2; }
+    }
+    ta := TouchArea { clicked => { root.clicked(); } }
+    fs := FocusScope {
+        focus-on-click: false;
+        key-pressed(e) => { if (e.text == " " || e.text == "\n") { root.clicked(); return accept; } return reject; }
+    }
+    Rectangle { visible: fs.has-focus; border-width: 2px; border-color: Theme.focus; border-radius: 12px; }
+}
+
+component PermissionRows inherits VerticalLayout {
+    in property <PeerRow> peer;
+    spacing: 0px;
+    SfSwitch { label: "This computer may control it"; hint: "Your mouse and keyboard can move onto that computer."; checked: peer.share-input; toggled(on) => { AppState.peer-perm(peer.id, "share_input", on); } }
+    SfSwitch { label: "It may control this computer"; hint: "Shown on screen while it is happening. The emergency shortcut always works."; checked: peer.accept-input; toggled(on) => { AppState.peer-perm(peer.id, "accept_input", on); } }
+    SfSwitch { label: "Send my clipboard to it"; hint: "Passwords you copy can travel too."; checked: peer.clip-send; toggled(on) => { AppState.peer-perm(peer.id, "clipboard_send", on); } }
+    SfSwitch { label: "Accept its clipboard"; checked: peer.clip-receive; toggled(on) => { AppState.peer-perm(peer.id, "clipboard_receive", on); } }
+    SfSwitch { label: "Accept files from it"; hint: "Each transfer still asks first unless you turn on automatic acceptance."; checked: peer.files-receive; toggled(on) => { AppState.peer-perm(peer.id, "files_receive", on); } }
+    SfSwitch { label: "Accept its files without asking"; hint: "Only for devices you fully trust. Files are never opened or run."; enabled: peer.files-receive; checked: peer.files-auto; toggled(on) => { AppState.peer-perm(peer.id, "files_auto_accept", on); } }
+    SfSwitch { label: "Reverse scroll direction for it"; checked: peer.invert-scroll; toggled(on) => { AppState.peer-perm(peer.id, "invert_scroll", on); } }
+    VerticalLayout {
+        padding-top: 8px;
+        spacing: 6px;
+        Strong { text: "Translate ⌘ and Ctrl shortcuts"; font-weight: 500; }
+        Small { text: "Only applies between a Mac and a Windows or Linux computer. Automatic follows the global setting."; }
+        Segment { options: ["Automatic", "On", "Off"]; current: peer.translate; label: "Shortcut translation"; selected(i) => { AppState.peer-translate(peer.id, i); } }
+    }
+}
+
+export component DevicesPage inherits Rectangle {
+    private property <bool> any-peers: AppState.peers.length > 0;
+    VerticalLayout {
+        padding: Theme.page-pad;
+        spacing: 16px;
+        HorizontalLayout {
+            spacing: 12px;
+            VerticalLayout {
+                spacing: 4px;
+                horizontal-stretch: 1;
+                Title { text: "Devices"; }
+                Body { text: "Only devices you verified can connect. A device's name is just a label; its fingerprint is its identity."; }
+            }
+            SfButton { text: "Pair a device"; icon: "plus"; kind: "primary"; y: 4px; clicked => { AppState.open-pairing(); AppState.pair-sheet = true; } }
+        }
+        HorizontalLayout {
+            spacing: 16px;
+            // ── lists ──
+            Card {
+                width: 330px;
+                ScrollView {
+                    VerticalLayout {
+                        alignment: start;
+                        padding: 14px;
+                        spacing: 6px;
+                        Small { text: "NEARBY — NOT PAIRED"; font-weight: 700; }
+                        if AppState.candidates.length == 0: Small { text: "None found right now."; }
+                        for c in AppState.candidates: Rectangle {
+                            height: 54px;
+                            HorizontalLayout {
+                                padding: 8px;
+                                spacing: 8px;
+                                VerticalLayout {
+                                    alignment: center;
+                                    horizontal-stretch: 1;
+                                    Strong { text: c.name; overflow: elide; wrap: no-wrap; }
+                                    Small { text: c.paired ? "Already paired" : "Not paired"; wrap: no-wrap; }
+                                }
+                                SfButton { text: "Pair"; enabled: !c.paired && !AppState.pairing-active; y: (parent.height - self.height) / 2; clicked => { AppState.pair-with(c.key); AppState.pair-sheet = true; } }
+                            }
+                        }
+                        Small { text: "TRUSTED — CONNECTED"; font-weight: 700; }
+                        for p[i] in AppState.peers: DeviceListRow {
+                            visible: p.online;
+                            height: p.online ? 58px : 0px;
+                            peer: p;
+                            selected: AppState.selected-peer == i;
+                            clicked => { AppState.selected-peer = i; }
+                        }
+                        Small { text: "TRUSTED — OFFLINE"; font-weight: 700; }
+                        for p[i] in AppState.peers: DeviceListRow {
+                            visible: !p.online;
+                            height: !p.online ? 58px : 0px;
+                            peer: p;
+                            selected: AppState.selected-peer == i;
+                            clicked => { AppState.selected-peer = i; }
+                        }
+                        if !any-peers: Body { text: "Your next screen is one pairing away."; }
+                    }
+                }
+            }
+            // ── detail ──
+            Card {
+                horizontal-stretch: 1;
+                if AppState.selected-peer < 0 || AppState.selected-peer >= AppState.peers.length: VerticalLayout {
+                    padding: 30px;
+                    alignment: center;
+                    spacing: 8px;
+                    Section { text: any-peers ? "Select a device" : "No devices yet"; horizontal-alignment: center; }
+                    Body { text: any-peers ? "See its identity, permissions and status." : "Pair a computer to share your mouse, keyboard, clipboard and files."; horizontal-alignment: center; }
+                }
+                if AppState.selected-peer >= 0 && AppState.selected-peer < AppState.peers.length: ScrollView {
+                    VerticalLayout {
+                        alignment: start;
+                        padding: 22px;
+                        spacing: 12px;
+                        HorizontalLayout {
+                            spacing: 10px;
+                            Section { text: AppState.peers[AppState.selected-peer].label; horizontal-stretch: 1; }
+                            Badge { kind: AppState.peers[AppState.selected-peer].kind; text: AppState.peers[AppState.selected-peer].status; }
+                        }
+                        if AppState.peers[AppState.selected-peer].error != "": Rectangle {
+                            height: er.preferred-height + 20px;
+                            border-radius: 10px;
+                            background: Theme.warning.with-alpha(0.14);
+                            er := HorizontalLayout {
+                                padding: 10px;
+                                spacing: 8px;
+                                Icon { name: "alert"; tint: Theme.warning; size: 16px; }
+                                Small { text: AppState.peers[AppState.selected-peer].error; color: Theme.warning; }
+                            }
+                        }
+                        Small { text: AppState.peers[AppState.selected-peer].platform + " · " + (AppState.peers[AppState.selected-peer].endpoint == "" ? "no known address" : AppState.peers[AppState.selected-peer].endpoint) + " · last connected " + AppState.peers[AppState.selected-peer].last-seen; }
+                        if AppState.peers[AppState.selected-peer].caps != "": Small { text: "Negotiated now: " + AppState.peers[AppState.selected-peer].caps; }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            SfInput {
+                                text: AppState.peers[AppState.selected-peer].label;
+                                label: "Local label";
+                                placeholder: "Name this device";
+                                horizontal-stretch: 1;
+                                accepted(t) => { AppState.peer-rename(AppState.peers[AppState.selected-peer].id, t); }
+                            }
+                        }
+                        Small { text: "This label is only for you. It is not authenticated — anyone can call themselves anything."; }
+                        FingerprintBlock { caption: "Identity fingerprint (SHA-256)"; value: AppState.peers[AppState.selected-peer].fingerprint; }
+                        PermissionRows { peer: AppState.peers[AppState.selected-peer]; }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            padding-top: 6px;
+                            SfButton { text: "Connect"; visible: !AppState.peers[AppState.selected-peer].online; clicked => { AppState.peer-connect(AppState.peers[AppState.selected-peer].id); } }
+                            SfButton { text: "Disconnect"; visible: AppState.peers[AppState.selected-peer].online; clicked => { AppState.peer-disconnect(AppState.peers[AppState.selected-peer].id); } }
+                            Rectangle { horizontal-stretch: 1; }
+                            if AppState.confirm-revoke-id != AppState.peers[AppState.selected-peer].id: SfButton {
+                                text: "Revoke trust";
+                                kind: "danger";
+                                clicked => { AppState.confirm-revoke-id = AppState.peers[AppState.selected-peer].id; }
+                            }
+                            if AppState.confirm-revoke-id == AppState.peers[AppState.selected-peer].id: HorizontalLayout {
+                                spacing: 8px;
+                                Small { text: "Ends any control now and forgets this device."; vertical-alignment: center; }
+                                SfButton { text: "Keep"; clicked => { AppState.confirm-revoke-id = ""; } }
+                                SfButton { text: "Revoke now"; kind: "danger"; clicked => { AppState.peer-revoke(AppState.peers[AppState.selected-peer].id); AppState.confirm-revoke-id = ""; AppState.selected-peer = -1; } }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

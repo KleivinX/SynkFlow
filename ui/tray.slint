@@ -1,0 +1,36 @@
+import { AppState } from "state.slint";
+
+// Menu-bar / notification-area item. A monochrome mark whose *shape* changes
+// with state (filled dot: active, bars: paused, ring: nothing connected), and
+// the menu spells the state out in words.
+export component AppTray inherits SystemTrayIcon {
+    // active | paused | idle
+    in property <string> mode: "paused";
+    in property <string> status-text: "Sharing paused";
+    in property <string> devices-text: "No devices connected";
+    in property <bool> clipboard-paused;
+    in property <bool> controlling;
+    in property <bool> dark-icon: false;
+    callback open();
+    callback toggle-pause();
+    callback toggle-clipboard();
+    callback return-local();
+    callback quit();
+
+    icon: dark-icon ? (mode == "active" ? @image-url("../assets/tray-active-dark.png") : mode == "paused" ? @image-url("../assets/tray-paused-dark.png") : @image-url("../assets/tray-idle-dark.png"))
+        : (mode == "active" ? @image-url("../assets/tray-active-light.png") : mode == "paused" ? @image-url("../assets/tray-paused-light.png") : @image-url("../assets/tray-idle-light.png"));
+    tooltip: "Synkflow — " + status-text;
+
+    Menu {
+        MenuItem { title: "Open Synkflow"; activated => { root.open(); } }
+        MenuSeparator {}
+        MenuItem { title: root.status-text; enabled: false; }
+        MenuItem { title: root.devices-text; enabled: false; }
+        MenuSeparator {}
+        MenuItem { title: "Return control to this computer"; enabled: root.controlling; activated => { root.return-local(); } }
+        MenuItem { title: root.clipboard-paused ? "Resume clipboard sharing" : "Pause clipboard sharing"; activated => { root.toggle-clipboard(); } }
+        MenuItem { title: root.mode == "paused" ? "Resume sharing" : "Pause all sharing"; activated => { root.toggle-pause(); } }
+        MenuSeparator {}
+        MenuItem { title: "Quit Synkflow"; activated => { root.quit(); } }
+    }
+}

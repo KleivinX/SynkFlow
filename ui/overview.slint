@@ -1,0 +1,89 @@
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { Title, Section, Body, Small, Strong, SfButton, Card, Badge, Icon, StatusCard } from "components.slint";
+import { LayoutCanvas } from "layout.slint";
+import { ScrollView } from "std-widgets.slint";
+
+export component OverviewPage inherits Rectangle {
+    ScrollView {
+        VerticalLayout {
+            alignment: start;
+            padding: Theme.page-pad;
+            spacing: 18px;
+            HorizontalLayout {
+                spacing: 16px;
+                VerticalLayout {
+                    spacing: 6px;
+                    horizontal-stretch: 1;
+                    Title { text: "Your desk, connected."; }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Badge { kind: AppState.state-kind; text: AppState.state-label; }
+                        Body { text: AppState.summary; vertical-alignment: center; }
+                    }
+                }
+                SfButton {
+                    text: AppState.paused ? "Start sharing" : "Pause sharing";
+                    icon: AppState.paused ? "play" : "pause";
+                    kind: AppState.paused ? "primary" : "secondary";
+                    y: 4px;
+                    clicked => { AppState.set-paused(!AppState.paused); }
+                }
+            }
+
+            // Screens schematic, or the empty state.
+            Card {
+                height: 300px;
+                VerticalLayout {
+                    padding: 18px;
+                    spacing: 12px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Section { text: "Your screens"; horizontal-stretch: 1; }
+                        if AppState.controlling-name != "": Badge { kind: "info"; text: "Using " + AppState.controlling-name; }
+                        SfButton { text: "Arrange screens"; kind: "quiet"; clicked => { AppState.page = 1; } }
+                    }
+                    if AppState.trusted-count > 0: LayoutCanvas { interactive: false; }
+                    if AppState.trusted-count == 0: Rectangle {
+                        background: Theme.canvas;
+                        border-radius: 12px;
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 10px;
+                            padding: 20px;
+                            Icon { name: "link"; tint: Theme.amber-text; size: 28px; x: (parent.width - self.width) / 2; }
+                            Section { text: "Your next screen is one pairing away."; horizontal-alignment: center; }
+                            Body { text: "Pair another computer on your network to share your mouse, keyboard, clipboard and files."; horizontal-alignment: center; }
+                            HorizontalLayout {
+                                alignment: center;
+                                spacing: 10px;
+                                SfButton { text: "Pair a device"; kind: "primary"; icon: "plus"; clicked => { AppState.open-pairing(); AppState.pair-sheet = true; } }
+                                SfButton { text: "Enter an address"; clicked => { AppState.open-pairing(); AppState.pair-sheet = true; } }
+                            }
+                        }
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 14px;
+                StatusCard { title: "Trusted devices"; icon: "devices"; value: AppState.connected-count + " of " + AppState.trusted-count; caption: "connected right now"; kind: AppState.connected-count > 0 ? "ok" : "idle"; }
+                StatusCard { title: "Keyboard and mouse"; icon: "layout"; value: AppState.input-state; caption: AppState.paused ? "Nothing crosses while paused" : "Crossing is allowed at mapped edges"; kind: AppState.paused ? "warn" : "ok"; }
+                StatusCard { title: "Clipboard"; icon: "copy"; value: AppState.clipboard-state; caption: "Chosen per device"; kind: AppState.clipboard-state == "On" ? "ok" : "idle"; }
+                StatusCard { title: "Transfers"; icon: "transfers"; value: AppState.active-transfers == 0 ? "None active" : AppState.active-transfers + " active"; caption: AppState.waiting-offers > 0 ? AppState.waiting-offers + " waiting for you" : "Every one needs approval"; kind: AppState.waiting-offers > 0 ? "warn" : "idle"; }
+            }
+
+            Section { text: "Quick actions"; }
+            HorizontalLayout {
+                spacing: 10px;
+                alignment: start;
+                SfButton { text: "Pair a device"; icon: "plus"; kind: "primary"; clicked => { AppState.open-pairing(); AppState.pair-sheet = true; } }
+                SfButton { text: "Arrange screens"; icon: "layout"; clicked => { AppState.page = 1; } }
+                SfButton { text: "Send files"; icon: "send"; clicked => { AppState.page = 3; } }
+                SfButton { text: AppState.paused ? "Start sharing" : "Pause sharing"; icon: AppState.paused ? "play" : "pause"; clicked => { AppState.set-paused(!AppState.paused); } }
+                if AppState.controlling-name != "": SfButton { text: "Return control here"; clicked => { AppState.return-local(); } }
+            }
+            Small { text: "Emergency stop: " + AppState.panic-hotkey + (AppState.panic-live ? " (active)" : " (active while sharing is on)") + " — or use the menu-bar item. Control always comes back to this computer."; }
+        }
+    }
+}

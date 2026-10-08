@@ -1,0 +1,333 @@
+// The whole UI reads one global. Rust fills the `in` properties from engine
+// snapshots and answers the callbacks by sending engine commands. No fake data
+// lives here: every default below is an empty or "not available" value.
+
+import { Palette } from "std-widgets.slint";
+
+export struct PeerRow {
+    id: string,
+    label: string,
+    platform: string,
+    status: string,
+    kind: string,        // ok | warn | err | idle | info
+    endpoint: string,
+    fingerprint: string, // grouped, four lines
+    last-seen: string,
+    error: string,
+    caps: string,
+    online: bool,
+    share-input: bool,
+    accept-input: bool,
+    clip-send: bool,
+    clip-receive: bool,
+    files-receive: bool,
+    files-auto: bool,
+    translate: int,      // 0 automatic, 1 on, 2 off
+    invert-scroll: bool,
+}
+
+export struct CandidateRow {
+    key: string,
+    name: string,
+    platform: string,
+    addr: string,
+    hint: string,
+    paired: bool,
+    warning: string,
+}
+
+export struct TransferRow {
+    id: string,
+    incoming: bool,
+    peer: string,
+    title: string,
+    subtitle: string,
+    status: string,
+    kind: string,
+    progress: float,
+    bytes: string,
+    speed: string,
+    eta: string,
+    error: string,
+    folder: string,
+    can-accept: bool,
+    can-cancel: bool,
+    can-retry: bool,
+    finished: bool,
+}
+
+export struct TileRow {
+    index: int,
+    device: int,
+    label: string,
+    device-label: string,
+    detail: string,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    local: bool,
+    enabled: bool,
+    online: bool,
+    invalid: bool,
+}
+
+export struct GroupRow {
+    index: int,
+    label: string,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    local: bool,
+    online: bool,
+    invalid: bool,
+    unreachable: bool,
+    active: bool,
+}
+
+export struct GuideRow {
+    vertical: bool,
+    pos: float,
+    from: float,
+    to: float,
+}
+
+export struct EdgeRow {
+    side: string,
+    neighbor: string,
+    span: string,
+    enabled: bool,
+    dwell: int,
+    modifier: bool,
+    corners: bool,
+}
+
+export struct NoticeRow {
+    id: int,
+    level: string, // info | warn | err
+    what: string,
+    safe: string,
+    action: string,
+    action-id: int,
+}
+
+export struct CapRow {
+    name: string,
+    status: string,
+    ok: bool,
+}
+
+export struct InterfaceRow {
+    name: string,
+    tunnel: bool,
+    selected: bool,
+}
+
+export struct Settings {
+    device-name: string,
+    start-paused: bool,
+    close-to-tray: bool,
+    start-at-login: bool,
+    edge-dwell: int,
+    edge-zone: int,
+    block-corners: bool,
+    require-modifier: bool,
+    cross-modifier: int,
+    sensitivity: float,
+    shortcut-translation: bool,
+    panic-hotkey: string,
+    switch-hotkey: string,
+    resume-after-lock: bool,
+    stay-local: bool,
+    clipboard-paused: bool,
+    accept-never: bool,
+    inbox: string,
+    discovery: bool,
+    include-tunnels: bool,
+    port: string,
+    theme: int,
+    motion: int,
+    transparency: int,
+    text-scale: int,
+    log-level: int,
+}
+
+export global AppState {
+    // ── navigation ──
+    in-out property <int> page: 0;            // 0 overview 1 layout 2 devices 3 transfers 4 settings
+    in-out property <int> settings-section: 0;
+    in-out property <bool> onboarding: false;
+    in-out property <int> onboard-step: 0;
+    in-out property <bool> pair-sheet: false;
+    // macOS draws no title bar of its own (the UI runs under a transparent one): this is the
+    // height of the strip it would occupy. 0 everywhere the OS keeps its native bar.
+    in property <length> titlebar-inset: 0px;
+    callback toggle-zoom();
+
+    // ── this computer ──
+    in property <string> device-name;
+    in property <string> platform-label;
+    in property <string> local-fingerprint;
+    in property <string> local-fp-short;
+    in property <string> store-label;
+    in property <string> port-label;
+    in property <string> version;
+
+    // ── sharing ──
+    in property <string> state-kind: "idle";
+    in property <string> state-label: "Starting…";
+    in property <string> summary: "";
+    in property <bool> paused: true;
+    in property <bool> sharing-ready;          // permissions + emergency stop OK
+    in property <string> panic-hotkey;
+    in property <bool> panic-live;
+    in property <bool> clipboard-paused;
+    in property <bool> stay-local;
+    in property <string> capture-text;
+    in property <string> inject-text;
+    in property <bool> capture-ok;
+    in property <bool> inject-ok;
+    in property <bool> clipboard-ok;
+    in property <string> backend-api;
+    in property <[string]> backend-notes;
+    in property <[CapRow]> capability-matrix;
+    in property <string> controlling-name;
+    in property <string> clipboard-state: "Off";
+    in property <string> input-state: "Off";
+    in property <bool> no-lan;
+    in property <bool> discovery-off;
+    in property <string> discovery-error;
+    in property <string> cross-modifier-name: "Shift";
+
+    // ── devices ──
+    in property <[PeerRow]> peers;
+    in property <[CandidateRow]> candidates;
+    in-out property <int> selected-peer: -1;
+    in property <int> connected-count;
+    in property <int> trusted-count;
+    in property <string> confirm-revoke-id;
+
+    // ── pairing ──
+    in property <bool> pairing-active;
+    in property <string> pair-stage;           // connecting | verify | waiting | done | failed
+    in property <bool> pair-initiator;
+    in property <string> pair-peer-name;
+    in property <string> pair-peer-platform;
+    in property <string> pair-peer-fp;
+    in property <string> pair-error;
+    in property <string> pair-warning;
+    in property <int> pair-seconds;
+    in property <int> window-secs;
+    in-out property <string> new-label;
+    in-out property <bool> new-share-input: true;
+    in-out property <bool> new-accept-input: true;
+    in-out property <bool> new-clipboard: false;
+    in-out property <bool> new-files: true;
+    in-out property <string> manual-address;
+
+    // ── layout editor ──
+    in property <[TileRow]> tiles;
+    in property <[GroupRow]> groups;
+    in property <[GuideRow]> guides;
+    in property <[EdgeRow]> edges;
+    in property <[string]> layout-problems;
+    in property <float> bounds-x;
+    in property <float> bounds-y;
+    in property <float> bounds-w: 1000;
+    in property <float> bounds-h: 600;
+    in-out property <float> zoom: 1.0;
+    in-out property <length> pan-x: 0px;
+    in-out property <length> pan-y: 0px;
+    in-out property <int> selected-tile: -1;
+    in property <bool> layout-dirty;
+    in property <string> inspector-title;
+    in property <string> inspector-detail;
+    in property <bool> inspector-enabled: true;
+    in property <bool> inspector-can-toggle;
+    in property <float> drag-dx;
+    in property <float> drag-dy;
+    in property <int> drag-group: -1;
+
+    // ── transfers ──
+    in property <[TransferRow]> transfers;
+    in property <[string]> target-names;
+    in-out property <int> target-index: 0;
+    in property <bool> drop-hover;
+    in property <int> active-transfers;
+    in property <int> waiting-offers;
+
+    // ── notices ──
+    in property <[NoticeRow]> notices;
+
+    // ── settings / appearance ──
+    in-out property <Settings> settings;
+    in property <[InterfaceRow]> interfaces;
+    in property <string> diagnostics-text;
+    // This computer's address(es) on the local network, typed on the other computer when pairing from there.
+    in property <string> local-addrs;
+    callback copy-diagnostics();
+    callback open-settings-folder();
+    // 0 system, 1 dark/on, 2 light/off — set from Settings by Rust.
+    in property <int> theme-pref: 0;
+    in property <int> motion-pref: 0;
+    in property <int> transparency-pref: 0;
+    in property <bool> os-reduce-motion;
+    in property <bool> os-reduce-transparency;
+    in property <float> text-scale: 1.0;
+    out property <bool> system-dark: Palette.color-scheme == ColorScheme.dark;
+    out property <bool> dark: theme-pref == 1 ? true : theme-pref == 2 ? false : Palette.color-scheme == ColorScheme.dark;
+    out property <bool> reduce-motion: motion-pref == 1 || (motion-pref == 0 && os-reduce-motion);
+    out property <bool> reduce-transparency: transparency-pref == 1 || (transparency-pref == 0 && os-reduce-transparency);
+
+    // ── callbacks: sharing ──
+    callback set-paused(bool);
+    callback set-clipboard-paused(bool);
+    callback return-local();
+    callback request-permissions();
+    callback open-permission-settings();
+    callback recheck-permissions();
+    // ── callbacks: pairing & devices ──
+    callback open-pairing();
+    callback close-pairing();
+    callback pair-with(string);
+    callback pair-manual(string);
+    callback approve-pairing();
+    callback reject-pairing();
+    callback peer-perm(string, string, bool);
+    callback peer-translate(string, int);
+    callback peer-rename(string, string);
+    callback peer-connect(string);
+    callback peer-disconnect(string);
+    callback peer-revoke(string);
+    callback copy-text(string);
+    // ── callbacks: layout ──
+    callback layout-drag(int, float, float);
+    callback layout-drop(int, float, float);
+    callback layout-select(int);
+    callback layout-nudge(int, float, float);
+    callback layout-toggle-tile(int, bool);
+    callback layout-apply();
+    callback layout-revert();
+    callback layout-reset();
+    callback edge-set(int, bool, int, bool, bool);
+    // ── callbacks: transfers ──
+    callback pick-files();
+    callback accept-transfer(string);
+    callback decline-transfer(string);
+    callback cancel-transfer(string);
+    callback retry-transfer(string);
+    callback clear-history();
+    callback open-inbox();
+    callback choose-inbox();
+    // ── callbacks: settings & misc ──
+    callback set-bool(string, bool);
+    callback set-int(string, int);
+    callback set-float(string, float);
+    callback set-text(string, string);
+    callback dismiss-notice(int);
+    callback notice-action(int);
+    callback finish-onboarding(bool);
+    callback delete-all-data();
+    callback quit();
+}

@@ -1,0 +1,8 @@
+/target
+/target 2
+/dist
+/vendor
+.DS_Store
+# local video-making workspaces and iCloud placeholders
+/brag-output*
+*.icloud

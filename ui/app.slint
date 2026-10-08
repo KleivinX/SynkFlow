@@ -1,0 +1,201 @@
+import { Theme } from "theme.slint";
+import { AppState, NoticeRow } from "state.slint";
+import { Title, Section, Body, Small, Strong, SfButton, NavItem, Badge, Icon, Card } from "components.slint";
+import { OverviewPage } from "overview.slint";
+import { LayoutPage } from "layout.slint";
+import { DevicesPage } from "devices.slint";
+import { TransfersPage } from "transfers.slint";
+import { SettingsPage } from "settings.slint";
+import { Onboarding } from "onboarding.slint";
+import { DiscoverPanel, VerifyPanel } from "pairing.slint";
+import { ScrollView } from "std-widgets.slint";
+
+// Re-exported so Rust can reach them through the generated module.
+export { AppState, Theme }
+export { AppTray } from "tray.slint";
+
+component Toast inherits Rectangle {
+    in property <NoticeRow> n;
+    height: col.preferred-height + 4px;
+    border-radius: 14px;
+    background: Theme.elevated;
+    border-width: 1px;
+    border-color: n.level == "err" ? Theme.error : n.level == "warn" ? Theme.warning : Theme.border-control;
+    accessible-role: groupbox;
+    accessible-label: n.what + ". " + n.safe;
+    col := VerticalLayout {
+        padding: 14px;
+        spacing: 6px;
+        HorizontalLayout {
+            spacing: 10px;
+            Icon { name: n.level == "info" ? "check" : "alert"; tint: n.level == "err" ? Theme.error : n.level == "warn" ? Theme.warning : Theme.success; size: 18px; y: 1px; }
+            VerticalLayout {
+                spacing: 3px;
+                horizontal-stretch: 1;
+                Strong { text: n.what; }
+                Small { text: n.safe; }
+            }
+            SfButton { icon: "x"; text: ""; kind: "quiet"; a11y-label: "Dismiss"; width: 32px; height: 32px; clicked => { AppState.dismiss-notice(n.id); } }
+        }
+        if n.action != "": HorizontalLayout {
+            alignment: end;
+            SfButton { text: n.action; clicked => { AppState.notice-action(n.id); } }
+        }
+    }
+}
+
+export component AppWindow inherits Window {
+    title: "Synkflow";
+    icon: @image-url("../assets/icon-256.png");
+    min-width: 840px;
+    min-height: 600px;
+    preferred-width: 1120px;
+    preferred-height: 760px;
+    background: Theme.canvas;
+
+    // The twilight: two soft washes behind everything, static, removed when
+    // transparency is reduced.
+    Rectangle {
+        clip: true;
+        Rectangle {
+            x: -320px;
+            y: -320px;
+            width: 820px;
+            height: 820px;
+            background: @radial-gradient(circle, Theme.wash-amber 0%, transparent 70%);
+        }
+        Rectangle {
+            x: root.width - 520px;
+            y: root.height - 500px;
+            width: 960px;
+            height: 960px;
+            background: @radial-gradient(circle, Theme.wash-violet 0%, transparent 70%);
+        }
+    }
+
+    if AppState.onboarding: Onboarding { width: root.width; height: root.height; }
+
+    if !AppState.onboarding: HorizontalLayout {
+        // ── sidebar ──
+        Rectangle {
+            width: Theme.sidebar-w;
+            background: Theme.reduce-transparency ? Theme.sidebar : Theme.sidebar.with-alpha(0.94);
+            VerticalLayout {
+                padding: 14px;
+                // Clear of the traffic lights when the window has no title bar of its own.
+                padding-top: AppState.titlebar-inset > 0px ? AppState.titlebar-inset + 6px : 14px;
+                spacing: 4px;
+                HorizontalLayout {
+                    spacing: 10px;
+                    padding-left: 4px;
+                    padding-bottom: 14px;
+                    padding-top: 6px;
+                    Image { source: @image-url("../assets/icon-128.png"); width: 34px; height: 34px; accessible-role: image; accessible-label: "Synkflow"; }
+                    VerticalLayout {
+                        alignment: center;
+                        Text { text: "Synkflow"; color: Theme.text; font-size: 17px * Theme.text-scale; font-weight: 700; letter-spacing: -0.2px; }
+                        Small { text: "Your desk. In sync."; }
+                    }
+                }
+                NavItem { text: "Overview"; icon: "overview"; selected: AppState.page == 0; clicked => { AppState.page = 0; } }
+                NavItem { text: "Screen layout"; icon: "layout"; selected: AppState.page == 1; clicked => { AppState.page = 1; } }
+                NavItem { text: "Devices"; icon: "devices"; selected: AppState.page == 2; clicked => { AppState.page = 2; } }
+                NavItem { text: "Transfers"; icon: "transfers"; selected: AppState.page == 3; badge: AppState.waiting-offers; clicked => { AppState.page = 3; } }
+                NavItem { text: "Settings"; icon: "settings"; selected: AppState.page == 4; clicked => { AppState.page = 4; } }
+                Rectangle { vertical-stretch: 1; }
+                // Sharing status and the always-available pause.
+                Rectangle {
+                    height: st.preferred-height + 4px;
+                    border-radius: 14px;
+                    background: Theme.surface;
+                    border-width: 1px;
+                    border-color: Theme.border-subtle;
+                    st := VerticalLayout {
+                        padding: 12px;
+                        spacing: 8px;
+                        Badge { kind: AppState.state-kind; text: AppState.state-label; }
+                        Small { text: AppState.summary; }
+                        SfButton {
+                            text: AppState.paused ? "Start sharing" : "Pause all sharing";
+                            icon: AppState.paused ? "play" : "pause";
+                            kind: AppState.paused ? "primary" : "secondary";
+                            clicked => { AppState.set-paused(!AppState.paused); }
+                        }
+                    }
+                }
+            }
+        }
+        // ── content ──
+        Rectangle {
+            horizontal-stretch: 1;
+            // Pages start below the title-bar strip so scrolled content never slides under the drag handle.
+            Rectangle {
+                y: AppState.titlebar-inset;
+                height: parent.height - AppState.titlebar-inset;
+                clip: true;
+                // Pages cross-fade (200 ms; none when motion is reduced). Hidden pages do not take input.
+                OverviewPage { opacity: AppState.page == 0 ? 1.0 : 0.0; visible: AppState.page == 0 || self.opacity > 0.01; animate opacity { duration: Theme.t-nav; easing: ease-out; } }
+                LayoutPage { opacity: AppState.page == 1 ? 1.0 : 0.0; visible: AppState.page == 1 || self.opacity > 0.01; animate opacity { duration: Theme.t-nav; easing: ease-out; } }
+                DevicesPage { opacity: AppState.page == 2 ? 1.0 : 0.0; visible: AppState.page == 2 || self.opacity > 0.01; animate opacity { duration: Theme.t-nav; easing: ease-out; } }
+                TransfersPage { opacity: AppState.page == 3 ? 1.0 : 0.0; visible: AppState.page == 3 || self.opacity > 0.01; animate opacity { duration: Theme.t-nav; easing: ease-out; } }
+                SettingsPage { opacity: AppState.page == 4 ? 1.0 : 0.0; visible: AppState.page == 4 || self.opacity > 0.01; animate opacity { duration: Theme.t-nav; easing: ease-out; } }
+            }
+        }
+    }
+
+    // Toasts: explain what happened, what stayed safe, and what to do.
+    if AppState.notices.length > 0: VerticalLayout {
+        x: root.width - self.width - 20px;
+        y: root.height - self.preferred-height - 20px;
+        width: 400px;
+        spacing: 10px;
+        for n[i] in AppState.notices: Toast { n: n; visible: i >= AppState.notices.length - 3; height: i >= AppState.notices.length - 3 ? self.preferred-height : 0px; }
+    }
+
+    // Pairing sheet.
+    if AppState.pair-sheet && !AppState.onboarding: Rectangle {
+        background: #00000099;
+        TouchArea { }
+        Card {
+            width: Math.min(700px, root.width - 60px);
+            height: Math.min(sheet.preferred-height + 60px, root.height - 60px);
+            x: (root.width - self.width) / 2;
+            y: (root.height - self.height) / 2;
+            raised: true;
+            accessible-role: groupbox;
+            accessible-label: "Pair a device";
+            VerticalLayout {
+                padding: 22px;
+                spacing: 12px;
+                HorizontalLayout {
+                    Section { text: "Pair a device"; horizontal-stretch: 1; }
+                    SfButton { icon: "x"; text: ""; kind: "quiet"; a11y-label: "Close"; width: 32px; height: 32px; clicked => { AppState.close-pairing(); AppState.pair-sheet = false; } }
+                }
+                ScrollView {
+                    vertical-stretch: 1;
+                    sheet := VerticalLayout {
+                        alignment: start;
+                        if !AppState.pairing-active: DiscoverPanel {}
+                        if AppState.pairing-active: VerifyPanel {}
+                    }
+                }
+                if AppState.pairing-active && (AppState.pair-stage == "done" || AppState.pair-stage == "failed"): HorizontalLayout {
+                    alignment: end;
+                    spacing: 8px;
+                    if AppState.pair-stage == "failed": SfButton { text: "Try again"; clicked => { AppState.close-pairing(); AppState.open-pairing(); } }
+                    SfButton { text: "Done"; kind: "primary"; clicked => { AppState.close-pairing(); AppState.pair-sheet = false; } }
+                }
+            }
+        }
+    }
+
+    // The title bar of a window that draws none of its own (macOS): drag to move, double-click to zoom.
+    // Declared last so it sits above everything, including onboarding and the pairing sheet's scrim.
+    if AppState.titlebar-inset > 0px: WindowMoveArea {
+        x: 0px;
+        y: 0px;
+        width: root.width;
+        height: AppState.titlebar-inset;
+        TouchArea { double-clicked => { AppState.toggle-zoom(); } }
+    }
+}

@@ -1,0 +1,75 @@
+// Abstract Twilight — design tokens.
+//
+// Dark values start from the project's palette; muted text, control borders
+// and focus colours were adjusted after measuring contrast on the real
+// surfaces (see docs/DESIGN.md and the `design_tokens_meet_contrast_targets`
+// test, which reads this file).
+//
+// Rules: amber = warmth and active focus; purple = the twilight environment;
+// gradients are atmosphere behind content, never on controls.
+
+import { AppState } from "state.slint";
+
+export global Theme {
+    out property <bool> dark: AppState.dark;
+    out property <bool> reduce-motion: AppState.reduce-motion;
+    out property <bool> reduce-transparency: AppState.reduce-transparency;
+    out property <float> text-scale: AppState.text-scale;
+
+    // Surfaces
+    out property <color> canvas: dark ? #100E18 : #FBF7F2;
+    out property <color> sidebar: dark ? #151220 : #F3EDF7;
+    out property <color> surface: dark ? #1D182B : #FFFFFF;
+    out property <color> elevated: dark ? #272035 : #F6F0FA;
+    // Decorative dividers and card outlines (not needed to understand a control).
+    out property <color> border-subtle: dark ? #3B314A : #E4DAEC;
+    // Boundaries of interactive controls: at least 3:1 against every surface.
+    out property <color> border-control: dark ? #75688E : #8F849E;
+
+    // Text
+    out property <color> text: dark ? #F7F3FB : #1C1726;
+    out property <color> text-2: dark ? #BCB2CA : #4A4258;
+    out property <color> text-3: dark ? #A598B4 : #6B6179;
+    out property <color> on-accent: #1A1008;
+
+    // Accents
+    out property <color> amber: dark ? #FFBF69 : #FFBF69;
+    out property <color> amber-deep: dark ? #E99736 : #C77700;
+    out property <color> amber-text: dark ? #FFBF69 : #8A5300;
+    out property <color> purple: dark ? #A78BFA : #5B3FC0;
+    out property <color> violet-deep: dark ? #7355D8 : #5B3FC0;
+    out property <color> lavender: dark ? #D8CBFF : #3B2A8C;
+    out property <color> focus: dark ? #D8CBFF : #5B3FC0;
+
+    // Status (always paired with a shape or a word)
+    out property <color> success: dark ? #6FD2A3 : #1B7A52;
+    out property <color> warning: dark ? #FFCA80 : #8F5A00;
+    out property <color> error: dark ? #F28CA2 : #B3263F;
+
+    // Atmosphere: two restrained washes, static. Reduced transparency removes them.
+    out property <color> wash-amber: reduce-transparency ? transparent : (dark ? #FFBF6930 : #FFBF6940);
+    out property <color> wash-violet: reduce-transparency ? transparent : (dark ? #7355D840 : #A78BFA30);
+
+    // Geometry (8-pt rhythm)
+    out property <length> radius-control: 10px;
+    out property <length> radius-panel: 16px;
+    out property <length> gap: 8px;
+    out property <length> gap-lg: 16px;
+    out property <length> page-pad: 30px;
+    out property <length> sidebar-w: 208px;
+
+    // Type scale. Tracking tightens as size grows, per the Apple guidance.
+    out property <length> fs-body: 13px * text-scale;
+    out property <length> fs-small: 12px * text-scale;
+    out property <length> fs-section: 19px * text-scale;
+    out property <length> fs-title: 28px * text-scale;
+    out property <length> fs-mono: 13px * text-scale;
+    out property <length> track-title: -0.5px;
+    out property <length> track-section: -0.2px;
+    out property <length> track-small: 0.1px;
+
+    // Motion: 120–180 ms feedback, 180–240 ms navigation; none when reduced.
+    out property <duration> t-fast: reduce-motion ? 0ms : 140ms;
+    out property <duration> t-nav: reduce-motion ? 0ms : 200ms;
+    out property <duration> t-snap: reduce-motion ? 0ms : 160ms;
+}

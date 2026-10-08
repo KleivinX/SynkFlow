@@ -1,0 +1,61 @@
+# Synkflow settings. Normally edited from the app (Settings); this file shows every key with its default.
+# Location: macOS ~/Library/Application Support/example.synkflow.Synkflow/config.toml
+#           Windows %APPDATA%\synkflow\Synkflow\config\config.toml   Linux ~/.config/synkflow/config.toml
+# Override with SYNKFLOW_CONFIG_DIR. The file is written atomically and readable only by you.
+
+version = 1
+device_name = "My computer"          # a label shown to paired devices; NOT an identity
+onboarding_done = false
+clipboard_paused = false
+
+[general]
+start_paused = false                  # true: after launching, nothing is shared until you press Start sharing
+close_to_tray = true
+start_at_login = false                # opt-in
+
+[input]
+edge_dwell_ms = 0                     # 0, 150, 300 or 500
+edge_zone = 2                         # points: 2, 4 or 8
+block_corners = true                  # ignore the screen corners (hot corners)
+require_modifier = false
+cross_modifier = "shift"              # shift | ctrl | alt | meta
+pointer_sensitivity = 1.0             # 0.25 – 4.0
+shortcut_translation = true           # ⌘ <-> Ctrl between Mac and PC (never between two Macs or two PCs)
+panic_hotkey = "Ctrl+Alt+Shift+Escape"
+switch_hotkey = "Ctrl+Alt+Shift+S"
+resume_after_lock = false             # stay paused after unlocking
+stay_local = false
+
+[files]
+# inbox_dir = "/path/to/folder"       # default: <Downloads>/Synkflow
+accept_mode = "ask"                   # ask | never
+
+[network]
+discovery = true
+interfaces = []                       # empty = every suitable interface (VPN/virtual excluded unless include_tunnels)
+include_tunnels = false
+port = 24847                          # 0 = pick a free port
+
+[appearance]
+theme = "system"                      # system | dark | light
+reduced_motion = "system"             # system | on | off
+reduced_transparency = "system"
+text_scale = 100                      # 100, 115 or 130
+
+[diagnostics]
+log_level = "warn"                    # error | warn | info | debug
+
+# Approved devices are added by pairing, never by hand-editing:
+# [[peers]]
+# fingerprint = "<64 hex digits>"
+# label = "Studio PC"
+# announced_name = "Studio PC"
+# platform = "Windows"
+# paired_at = 1790000000
+# [peers.perms]
+# share_input = true
+# accept_input = true
+# clipboard_send = false
+# clipboard_receive = false
+# files_receive = true
+# files_auto_accept = false

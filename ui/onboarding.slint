@@ -1,0 +1,165 @@
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { Title, Section, Body, Small, Strong, SfButton, SfInput, Card, Badge, Icon } from "components.slint";
+import { DiscoverPanel, VerifyPanel } from "pairing.slint";
+import { LayoutCanvas } from "layout.slint";
+import { ScrollView } from "std-widgets.slint";
+
+component Check inherits Rectangle {
+    in property <string> text;
+    in property <string> hint;
+    in property <bool> ok: true;
+    height: row.preferred-height;
+    row := HorizontalLayout {
+        spacing: 12px;
+        Rectangle {
+            width: 28px;
+            height: 28px;
+            border-radius: 14px;
+            background: root.ok ? Theme.success.with-alpha(0.16) : Theme.warning.with-alpha(0.16);
+            Icon { name: root.ok ? "check" : "alert"; tint: root.ok ? Theme.success : Theme.warning; size: 16px; x: 6px; y: 6px; }
+        }
+        VerticalLayout {
+            spacing: 1px;
+            alignment: center;
+            horizontal-stretch: 1;
+            Strong { text: root.text; }
+            if root.hint != "": Small { text: root.hint; }
+        }
+    }
+}
+
+export component Onboarding inherits Rectangle {
+    private property <int> steps: 5;
+    VerticalLayout {
+        padding: 36px;
+        spacing: 18px;
+        // Progress: dots plus the words, never colour alone.
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: center;
+            for i in root.steps: Rectangle {
+                width: AppState.onboard-step == i ? 28px : 10px;
+                height: 10px;
+                border-radius: 5px;
+                background: i <= AppState.onboard-step ? Theme.amber : Theme.elevated;
+                animate width { duration: Theme.t-fast; easing: ease-out; }
+            }
+        }
+        Small { text: "Step " + (AppState.onboard-step + 1) + " of " + root.steps; horizontal-alignment: center; }
+
+        ScrollView {
+            vertical-stretch: 1;
+            HorizontalLayout {
+                alignment: center;
+                VerticalLayout {
+                    width: Math.min(660px, root.width - 72px);
+                    alignment: start;
+                    spacing: 16px;
+                    padding-top: 12px;
+
+                    // 1 — welcome
+                    if AppState.onboard-step == 0: VerticalLayout {
+                        alignment: start;
+                        spacing: 18px;
+                        Title { text: "Bring your desk together."; }
+                        Body { text: "Share your mouse, keyboard, and files between computers on your local network."; font-size: 16px * Theme.text-scale; }
+                        Card {
+                            height: pc.preferred-height + 8px;
+                            pc := VerticalLayout {
+                                padding: 22px;
+                                spacing: 16px;
+                                Check { text: "No account."; hint: "Nothing to sign up for, nobody to log in to."; }
+                                Check { text: "No cloud relay."; hint: "Your computers talk directly. Nothing leaves your network."; }
+                                Check { text: "You approve every device."; hint: "A computer can only connect after you compare fingerprints and approve."; }
+                            }
+                        }
+                    }
+
+                    // 2 — name and permissions
+                    if AppState.onboard-step == 1: VerticalLayout {
+                        alignment: start;
+                        spacing: 14px;
+                        Title { text: "Set up this computer"; }
+                        Section { text: "Name"; }
+                        SfInput { text: AppState.settings.device-name; label: "Computer name"; placeholder: "What should other computers call this one?"; accepted(t) => { AppState.set-text("device_name", t); } edited(t) => { AppState.set-text("device_name", t); } }
+                        Small { text: "Detected: " + AppState.platform-label + ". The name is a label, not an identity — your fingerprint is."; }
+                        Section { text: "What this computer can do"; }
+                        Card {
+                            height: cc.preferred-height + 8px;
+                            cc := VerticalLayout {
+                                padding: 20px;
+                                spacing: 14px;
+                                Check { ok: AppState.capture-ok; text: "Notice your pointer reaching a screen edge"; hint: AppState.capture-text + ". This lets Synkflow hand your mouse and keyboard to another computer."; }
+                                Check { ok: AppState.inject-ok; text: "Let another computer move this one's pointer and type"; hint: AppState.inject-text + ". Only used while a device you approved controls this computer, and it is always visible."; }
+                                Check { ok: AppState.clipboard-ok; text: "Share the clipboard (optional)"; hint: AppState.clipboard-ok ? "Available. Off until you enable it per device." : "Not available on this system."; }
+                            }
+                        }
+                        for n in AppState.backend-notes: Small { text: "• " + n; }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            SfButton { text: "Ask for access"; visible: !AppState.capture-ok || !AppState.inject-ok; clicked => { AppState.request-permissions(); } }
+                            SfButton { text: "Open system settings"; visible: !AppState.capture-ok || !AppState.inject-ok; clicked => { AppState.open-permission-settings(); } }
+                            SfButton { text: "Check again"; kind: "quiet"; clicked => { AppState.recheck-permissions(); } }
+                        }
+                        Small { text: "You can continue without these; sharing stays off until they are granted. Nothing is requested that is not needed."; }
+                    }
+
+                    // 3 — discover
+                    if AppState.onboard-step == 2: VerticalLayout {
+                        alignment: start;
+                        spacing: 14px;
+                        Title { text: "Find your other computer"; }
+                        DiscoverPanel {}
+                    }
+
+                    // 4 — verify
+                    if AppState.onboard-step == 3: VerticalLayout {
+                        alignment: start;
+                        spacing: 14px;
+                        Title { text: "Verify identity"; }
+                        if !AppState.pairing-active: VerticalLayout {
+                            spacing: 10px;
+                            Body { text: "No pairing is in progress. Go back and choose a computer, or skip this step and pair later from Devices."; }
+                        }
+                        if AppState.pairing-active: VerifyPanel {}
+                    }
+
+                    // 5 — arrange and start
+                    if AppState.onboard-step == 4: VerticalLayout {
+                        alignment: start;
+                        spacing: 14px;
+                        Title { text: "Arrange your screens"; }
+                        Body { text: "Drag each computer to where it sits on your desk. You can change this any time."; }
+                        LayoutCanvas { interactive: true; user-zoom: 1.0; height: 240px; }
+                        HorizontalLayout { spacing: 8px; alignment: start; SfButton { text: "Apply layout"; enabled: AppState.layout-dirty && AppState.layout-problems.length == 0; clicked => { AppState.layout-apply(); } } }
+                        Section { text: "Ready to share?"; }
+                        Check { ok: AppState.capture-ok; text: "Permissions"; hint: AppState.capture-ok ? "Granted." : AppState.capture-text; }
+                        Check { ok: AppState.trusted-count > 0; text: "A trusted device"; hint: AppState.trusted-count > 0 ? AppState.trusted-count + " approved." : "Pair a computer first (step 3)."; }
+                        Check { ok: AppState.capture-ok; text: "Emergency stop"; hint: AppState.panic-hotkey + " returns control and pauses everything. The menu-bar item and the Pause button also work."; }
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 10px;
+            alignment: center;
+            SfButton { text: "Back"; visible: AppState.onboard-step > 0; clicked => { AppState.onboard-step -= 1; } }
+            if AppState.onboard-step < 4: SfButton {
+                text: AppState.onboard-step == 2 ? "Continue" : AppState.onboard-step == 3 ? (AppState.pairing-active ? "Continue" : "Skip") : "Continue";
+                kind: "primary";
+                enabled: !(AppState.onboard-step == 3 && AppState.pairing-active && AppState.pair-stage != "done" && AppState.pair-stage != "failed");
+                clicked => { AppState.onboard-step += 1; }
+            }
+            if AppState.onboard-step == 4: SfButton {
+                text: "Start sharing";
+                kind: "primary";
+                icon: "play";
+                enabled: AppState.capture-ok && AppState.trusted-count > 0;
+                clicked => { AppState.finish-onboarding(true); }
+            }
+            if AppState.onboard-step == 4: SfButton { text: "Finish, keep sharing off"; clicked => { AppState.finish-onboarding(false); } }
+        }
+    }
+}
