@@ -140,25 +140,26 @@ Packaging (macOS `.app`/`.dmg`, Windows installer, Linux desktop entry), signing
 
 ```mermaid
 flowchart LR
-    subgraph A[Computer A]
-        capA[Capture: event tap, hooks, XInput2] --> engA[Engine]
-        uiA[Slint UI] <--> engA
-        engA --> injA[Inject: CGEventPost, SendInput, XTEST]
+    subgraph A["Computer A"]
+        capA["Capture"] --> engA["Engine"]
+        uiA["Slint UI"] --> engA
+        engA --> injA["Inject"]
     end
-    subgraph B[Computer B]
-        capB[Capture] --> engB[Engine]
-        uiB[Slint UI] <--> engB
-        engB --> injB[Inject]
+    subgraph B["Computer B"]
+        capB["Capture"] --> engB["Engine"]
+        uiB["Slint UI"] --> engB
+        engB --> injB["Inject"]
     end
-    engA <-->|TLS 1.3, mutual auth, pinned identities| engB
-    mdns((mDNS)) -.->|introduces only| engA
+    engA <-->|"TLS 1.3, mutual auth"| engB
+    mdns(("mDNS")) -.-> engA
     mdns -.-> engB
 ```
 
 - **One engine per computer.** A single actor owns all state; a pure state machine (events in, effects out) decides who controls whom, so
   the logic is testable without a keyboard, a mouse or a network.
 - **Two engines in the tests.** The automated tests pair two complete engines over loopback TLS, including a hand-driven hostile peer.
-- **Operating-system layers are small and separate.** Capture and injection sit behind one trait with macOS, Windows and X11 implementations.
+- **Operating-system layers are small and separate.** Capture and injection sit behind one trait with three implementations: a CoreGraphics event tap and `CGEventPost` on macOS, low-level hooks and `SendInput` on Windows, XInput2 and XTEST on Linux X11.
+- **mDNS only introduces.** Discovery never grants trust; the pinned TLS identity and your fingerprint check do.
 
 Deeper reading: [Architecture & protocol](docs/ARCHITECTURE.md) · [Design system](docs/DESIGN.md).
 
