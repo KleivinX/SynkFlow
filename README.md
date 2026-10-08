@@ -20,7 +20,7 @@ Open source · 100 % local · no account · no cloud · no relay · no telemetry
 </p>
 
 <p>
-  <a href="#see-it-in-action"><b>Watch the film</b></a> ·
+  <a href="#see-it-in-action"><b>See it in action</b></a> ·
   <a href="#download"><b>Download</b></a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#how-it-works">How it works</a> ·
@@ -45,14 +45,14 @@ It is written in **Rust** (Tokio, rustls / TLS 1.3, mDNS) with a native **Slint*
 <table>
 <tr>
 <td width="300" valign="top">
-<a href="docs/media/synkflow-showcase.mp4"><img src="docs/media/showcase-preview.gif" width="280" alt="Short preview of the Synkflow film: the pointer leaving a MacBook and arriving on a Windows monitor, then text copied across"></a>
+<img src="docs/media/showcase-preview.gif" width="280" alt="Short preview of the Synkflow film: the pointer leaving a MacBook and arriving on a Windows monitor, then text copied across">
 </td>
 <td valign="top">
 
-**Watch the 40-second film**
+**The 40-second film** (the clip on the left is a taste of it)
 
-▶ [`synkflow-showcase.mp4`](docs/media/synkflow-showcase.mp4) · 1080×1920 · 12 MB<br>
-▶ [`synkflow-teaser.mp4`](docs/media/synkflow-teaser.mp4) · the 23-second teaser · 7 MB
+⬇ [`synkflow-showcase.mp4`](https://github.com/KleivinX/SynkFlow/raw/main/docs/media/synkflow-showcase.mp4) · 1080×1920 · 12 MB<br>
+⬇ [`synkflow-teaser.mp4`](https://github.com/KleivinX/SynkFlow/raw/main/docs/media/synkflow-teaser.mp4) · the 23-second teaser · 7 MB
 
 Pair once. Arrange your screens by dragging. Push past the edge. Copy here, paste there. Send a file. Hit emergency stop.
 
@@ -63,7 +63,7 @@ Pair once. Arrange your screens by dragging. Push past the edge. Copy here, past
 </table>
 
 <p align="center">
-  <a href="docs/media/synkflow-showcase.mp4"><img src="docs/media/showcase-strip.png" width="900" alt="Five frames from the film: Pair once, Arrange your screens, One mouse and one keyboard, Copy here and paste there, Emergency stop"></a>
+  <img src="docs/media/showcase-strip.png" width="900" alt="Five frames from the film: Pair once, Arrange your screens, One mouse and one keyboard, Copy here and paste there, Emergency stop">
 </p>
 
 ## The interface
