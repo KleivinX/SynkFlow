@@ -21,5 +21,5 @@ First public release of Synkflow. It is a tested vertical slice, not a finished 
 ### Known limitations
 - Installers are **unsigned**: macOS Gatekeeper and Windows SmartScreen will warn on first launch.
 - The macOS build is Intel (x86_64).
-- Real keyboard and mouse capture and injection are not covered by the automated tests; Windows and Linux builds have had little or no testing on real hardware.
+- Real keyboard and mouse capture and injection are not covered by the automated tests (they are checked by hand). Windows has been tested by the author on a real laptop paired with a Mac and works. Linux (X11) is work in progress and not yet tested.
 - No Wayland input sharing, no folder transfers, no transfer resume, no game-grade raw input.

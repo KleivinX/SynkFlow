@@ -11,6 +11,12 @@ cargo test --no-default-features            # all suites (no Slint needed, much 
 
 Dependency versions are pinned by the committed `Cargo.lock`; build with `--locked` for reproducibility.
 
+## Sharing a build
+
+Rust embeds source paths (for panic messages), and without precaution they include the builder's home folder and user name. Before building
+anything you will hand to other people, run `source packaging/clean-paths.sh` in the same shell, then build as usual. `packaging/windows/build.sh`
+does it for you. Check a result: `strings target/release/synkflow | grep "$HOME"` must print nothing.
+
 ## Offline / vendored builds
 
 Runtime needs no internet at all. Only *building* downloads crates. To build with no network:

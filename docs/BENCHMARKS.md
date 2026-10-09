@@ -1,6 +1,6 @@
 # Benchmarks
 
-Everything below was **measured on one machine**: macOS 13.7.8, Intel x86_64, Rust 1.96.1. Nothing was measured on Windows or
+Everything below was **measured on one machine**: macOS 13, Intel x86_64, Rust 1.96.1. Nothing was measured on Windows or
 Linux, on two physical computers, or over a real network. Numbers from a different machine will differ. A figure that is not in
 this file was not measured.
 
@@ -53,10 +53,10 @@ open or during a transfer** were not measured, and neither was battery impact.
 
 | File | Size |
 |---|---|
-| macOS `synkflow` binary (inside the `.app`) | 23.3 MB |
-| `Synkflow-0.1.0.dmg` | 12.6 MB |
-| Windows `synkflow.exe` (cross-built, never run) | 32.8 MB |
-| `Synkflow-Setup-0.1.0.exe` (installer with embedded app) | 34.4 MB |
+| macOS `synkflow` binary (inside the `.app`) | 23.2 MB |
+| `Synkflow-0.1.0.dmg` | 12.5 MB |
+| Windows `synkflow.exe` (cross-built) | 32.9 MB |
+| `Synkflow-Setup-0.1.0.exe` (installer with embedded app) | 34.5 MB |
 
 ## Not measured
 

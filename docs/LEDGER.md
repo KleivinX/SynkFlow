@@ -3,7 +3,7 @@
 What was built, what was verified (and how), what is incomplete, blocked, or unverified. Written for honesty, not marketing:
 nothing here is "production-ready" — this is a tested vertical slice with known gaps.
 
-Build/test host: **macOS 13.7.8, Intel (x86_64), Rust 1.96.1**. Windows was *cross-compiled* (never run); Linux was not built at all.
+Build/test host: **macOS 13, Intel (x86_64), Rust 1.96.1**. Windows was cross-compiled here and has since been **tested by the author on a real Windows laptop paired with a Mac (works)**. Linux (X11) is work in progress and was not built here.
 
 ## Completed and verified by automated tests (171 tests; `cargo test`)
 
@@ -26,7 +26,7 @@ Build/test host: **macOS 13.7.8, Intel (x86_64), Rust 1.96.1**. Windows was *cro
 | Design tokens meet WCAG targets in both themes; status never colour-only | `tests/design.rs` |
 | Discovery: two mDNS instances find each other | `discovery` test (ignored by default; passed when run with `--ignored`) |
 
-## Verified by running the real thing on macOS 13.7 (this machine)
+## Verified by running the real thing on macOS 13 (the build machine)
 
 * The GUI (all screens, dark and light, large text, reduced motion/transparency, onboarding, pairing, verification, layout, devices,
   transfers, settings) rendered from **real engine state** (two engines paired over loopback) — `examples/ui_snapshots.rs`.
@@ -59,7 +59,10 @@ Windows Firewall remains the most likely cause on a real laptop and cannot be fi
 rights; the tutorial lists the steps. Verified here with the real macOS binary: the log is written with this Mac's real LAN address, an old
 settings file starts with sharing active, the GUI launches.
 
-## Windows artifacts: built and checked structurally here, never executed
+## Windows artifacts: cross-built and checked here, then tested by the author on real hardware
+
+* **Real-hardware test (2026-10-09):** the author ran the Windows app on a real Windows laptop paired with a Mac and reports that it works. What was
+  exercised in that test was not recorded in detail, so the structural checks below remain the evidence this repository can show itself.
 
 * `synkflow.exe` and `Synkflow-Setup-0.1.0.exe` were cross-built for `x86_64-pc-windows-gnu` with `cargo zigbuild` (zig as C compiler/linker).
 * Checked by parsing the PE headers: 64-bit, **GUI subsystem**, imports only Windows system DLLs (no MinGW runtime DLL is needed).
@@ -68,16 +71,17 @@ settings file starts with sharing active, the GUI launches.
   `synkflow.exe` was a console-subsystem program (it would have opened a black window). Both fixed, then rebuilt.
 * The macOS `.dmg` was **rebuilt from the final sources** after those fixes (release build, `--selftest` OK, `clippy -D warnings` clean with and
   without the UI, `cargo fmt --check` clean, tests passed, signature and contents re-verified from the mounted image).
-* Unsigned: Windows SmartScreen will warn. Not run on Windows 10/11, so install, uninstall, shortcuts and the Apps & features entry are unverified.
+* Unsigned: Windows SmartScreen will warn. Because the author's test was not recorded in detail, uninstall, the Start-menu shortcut and the Apps & features entry are not independently verified.
 
-## Implemented but **not verified by execution** (needs the manual checklist)
+## Implemented, with parts **not independently verified** (needs the manual checklist)
 
 * **Real keyboard/mouse capture and injection on macOS** (event tap / `CGEventPost`). The permission checks report "available" on
   the build machine, but no input was captured or injected (doing so would have moved the author's real pointer).
-* The entire **Windows** backend (low-level hooks, Raw Input, `SendInput`, monitors, lock detection), Windows clipboard markers, the Windows
-  GUI (software renderer), the **Windows installer** — all compiled for `x86_64-pc-windows-gnu`, **never run**.
-* The **Linux/X11** backend (XInput2 raw events, XTEST, RandR) — written, never compiled with the Linux target in this environment
-  (see below), never run.
+* The **Windows** backend (low-level hooks, Raw Input, `SendInput`, monitors, lock detection), Windows clipboard markers, the Windows
+  GUI (software renderer) and the **Windows installer** — cross-compiled for `x86_64-pc-windows-gnu`; tested by the author on a real laptop (see above),
+  but not covered by automated tests.
+* The **Linux/X11** backend (XInput2 raw events, XTEST, RandR) — **work in progress**: written, never compiled with the Linux target in this
+  environment (see below) and never run.
 * mDNS on Windows/Linux; start-at-login on Windows; tray on every OS other than macOS; OS file-drop events (compiled, not exercised).
 * Screen-reader behaviour of the UI (AccessKit): not tested.
 
@@ -93,10 +97,10 @@ settings file starts with sharing active, the GUI launches.
 
 ## Blocked by the environment
 
-* The author's machine had ~100 MB–2 GB free disk for the whole session. Builds were done strictly one at a time and the large
+* The build machine had very little free disk for the whole session. Builds were done strictly one at a time and the large
   test was run at 32 MiB on the final pass (96 MiB passed earlier, peak RSS ≈ 10 MB). Consequently Linux cross-compilation was not
   attempted, and benchmark coverage is limited (see `docs/BENCHMARKS.md`).
-* No second computer, no Windows, no Linux available: nothing was run on them.
+* No Windows or Linux machine was available to the build session itself; the Windows test above was done separately by the author, and Linux has not been run.
 
 ## Deliberate security decisions worth re-reading
 

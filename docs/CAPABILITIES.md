@@ -3,7 +3,10 @@
 Legend — **Verified**: exercised by automated tests in this repository's environment. **Compiled**: builds for that target but was
 not executed there. **Unverified**: written to the OS API contract; needs the manual checklist. **No**: not supported.
 
-The build/test host was **macOS 13.7 (Intel)**. Cross-compilation proves only that the code builds.
+The build/test host was **macOS 13 (Intel)**. Cross-compilation proves only that the code builds.
+
+**Update, 2026-10-09:** the author has tested Windows on a real laptop paired with a Mac and reports that it works. The Windows column below was
+written before that test and keeps its original marks until each row is re-checked against the manual checklist. Linux (X11) is work in progress.
 
 | Capability | macOS | Windows | Linux X11 | Linux Wayland |
 |---|---|---|---|---|

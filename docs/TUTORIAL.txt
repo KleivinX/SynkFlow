@@ -203,9 +203,10 @@ PRIVACY AND SECURITY IN SHORT
 
 HONEST LIMITS OF THIS VERSION
 -----------------------------
- * Windows and Linux builds, and real mouse/keyboard capture on every system,
-   have not been tested by the author on real hardware — please run the
-   checklist in docs/TESTING.md and report problems.
+ * Windows has been tested by the author on a real laptop paired with a Mac
+   and works. Linux (X11) is work in progress and not yet tested. Real
+   mouse/keyboard capture is checked by hand, not by the automated tests —
+   please run the checklist in docs/TESTING.md and report problems.
  * No Wayland keyboard/mouse sharing. No game-grade raw input.
  * No OS-level drag-and-drop between computers (use "Send files").
  * Unsigned installers: macOS and Windows will warn the first time.

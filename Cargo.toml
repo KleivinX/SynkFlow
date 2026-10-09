@@ -2,6 +2,11 @@
 name = "synkflow"
 version = "0.1.0"
 edition = "2024"
+description = "Share one mouse, keyboard, clipboard and file sending across your own computers. 100 % local."
+license = "GPL-3.0-only"
+homepage = "https://blocksandbrew.com/synkflow/"
+repository = "https://github.com/KleivinX/SynkFlow"
+readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.104"

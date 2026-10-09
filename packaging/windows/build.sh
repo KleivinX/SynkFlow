@@ -8,6 +8,7 @@ cd "$(dirname "$0")/../.."
 VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
 TARGET=x86_64-pc-windows-gnu
 export CARGO_INCREMENTAL=0
+. packaging/clean-paths.sh   # keep the builder's user name and folders out of the shipped binaries
 
 cargo zigbuild --release --locked --target "$TARGET"
 

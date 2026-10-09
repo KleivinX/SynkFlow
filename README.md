@@ -13,13 +13,18 @@ Open source · 100 % local · no account · no cloud · no relay · no telemetry
   <a href="LICENSE"><img alt="License: GPL-3.0-only" src="https://img.shields.io/badge/license-GPL--3.0--only-blue?style=flat-square"></a>
   <img alt="Rust" src="https://img.shields.io/badge/Rust-1.96-orange?style=flat-square&logo=rust&logoColor=white">
   <img alt="UI: Slint" src="https://img.shields.io/badge/UI-Slint-2379F4?style=flat-square">
-  <img alt="Platforms: macOS, Windows, Linux X11" src="https://img.shields.io/badge/macOS_·_Windows_·_Linux_(X11)-lightgrey?style=flat-square">
+  <img alt="Platforms: macOS, Windows, Linux X11" src="https://img.shields.io/badge/macOS_·_Windows_·_Linux_(in_progress)-lightgrey?style=flat-square">
   <img alt="171 tests passing" src="https://img.shields.io/badge/tests-171_passing-brightgreen?style=flat-square">
   <img alt="Telemetry: none" src="https://img.shields.io/badge/telemetry-none-success?style=flat-square">
   <img alt="Status: v0.1 early preview" src="https://img.shields.io/badge/status-v0.1_early_preview-F5A524?style=flat-square">
 </p>
 
 <p>
+  <a href="https://blocksandbrew.com/synkflow/"><img alt="Official website: blocksandbrew.com/synkflow" src="https://img.shields.io/badge/official_website-blocksandbrew.com%2Fsynkflow-F5A524?style=for-the-badge&logo=safari&logoColor=white"></a>
+</p>
+
+<p>
+  <a href="https://blocksandbrew.com/synkflow/"><b>Website</b></a> ·
   <a href="#see-it-in-action"><b>See it in action</b></a> ·
   <a href="#download"><b>Download</b></a> ·
   <a href="#quick-start">Quick start</a> ·
@@ -108,7 +113,7 @@ Installers are attached to the [**v0.1.0 release**](https://github.com/KleivinX/
 |---|---|---|
 | **macOS 11+** | `Synkflow-0.1.0.dmg` | Intel (x86_64) build. Open it, drag Synkflow to Applications, then right-click → Open the first time. Grant Accessibility and Input Monitoring when asked. |
 | **Windows 10 / 11** (64-bit) | `Synkflow-Setup-0.1.0.exe` | Per-user install, no administrator rights. When Windows Firewall asks, allow Synkflow on **private** networks. |
-| **Linux (X11)** | build from source | Needs an X11 session. Wayland cannot capture or inject input and is reported as unsupported. |
+| **Linux (X11)** | not yet | Work in progress. Wayland cannot capture or inject input and is reported as unsupported. |
 
 A plain-text walkthrough with troubleshooting is in [`docs/TUTORIAL.txt`](docs/TUTORIAL.txt).
 
@@ -179,15 +184,15 @@ This project says plainly what has been checked. The full list is in [`docs/LEDG
 |---|---|
 | ✅ **Automated tests (171)** | Protocol, pairing, trust, the control state machine, clipboard rules, file transfer and layout logic, with two complete engines over loopback TLS. |
 | ✅ **macOS app** | Builds, passes its self-test, launches, packages into an ad-hoc-signed `.dmg`. |
-| ⚠️ **Real input capture and injection** | Not exercised by the automated tests on any operating system. Use the manual checklist in [`docs/TESTING.md`](docs/TESTING.md). |
-| ⚠️ **Windows** | Cross-built from macOS and checked structurally. Real-hardware testing is only starting; expect rough edges and please report them. |
-| ◻️ **Linux X11** | Written but not yet built or run by the author. |
+| ⚠️ **Real input capture and injection** | The automated tests use a stand-in for the OS keyboard and mouse, so real capture and injection are checked by hand with the checklist in [`docs/TESTING.md`](docs/TESTING.md). Mac ↔ Windows has been tested by the author. |
+| ✅ **Windows** | Tested by the author on a real Windows laptop paired with a Mac, and it works. Cross-built from macOS; the installer is per-user and unsigned. |
+| 🚧 **Linux X11** | Work in progress. The backend is written but not yet built or tested. |
 | ❌ **Linux Wayland** | Cannot capture or inject input. Clipboard and files only, and the app says so. |
 
 ## Roadmap
 
 - Native Apple Silicon build, and code signing / notarization for macOS and Windows
-- Verification on real Windows and Linux hardware, and continuous integration on all three systems
+- Linux (X11) bring-up and testing, and continuous integration on all three systems
 - QR-assisted fingerprint verification
 - Wayland support through portals and libei
 - Folder transfers and transfer resume, fuzz targets for the protocol decoder
@@ -208,7 +213,9 @@ If Synkflow is useful to you, a ⭐ on the repository helps other people find it
 
 ## Made by
 
-**Kleivin Gjuzi** builds open-source tools for fun and uses every one of them in daily life. Say hello or follow along:
+**Kleivin Gjuzi** builds open-source tools for fun and uses every one of them in daily life.
+
+Synkflow's **official website** is **[blocksandbrew.com/synkflow](https://blocksandbrew.com/synkflow/)**. Synkflow is an open-source project made by Kleivin; Blocks and Brew is also Kleivin's brand, and hosts the site. Say hello or follow along:
 
 <p>
   <a href="https://www.linkedin.com/in/kleivin-gjuzi-7a7w/"><img alt="LinkedIn: Kleivin Gjuzi" src="https://img.shields.io/badge/LinkedIn-Kleivin_Gjuzi-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white"></a>
