@@ -143,22 +143,9 @@ Packaging (macOS `.app`/`.dmg`, Windows installer, Linux desktop entry), signing
 
 ## How it works
 
-```mermaid
-flowchart LR
-    subgraph A["Computer A"]
-        capA["Capture"] --> engA["Engine"]
-        uiA["Slint UI"] --> engA
-        engA --> injA["Inject"]
-    end
-    subgraph B["Computer B"]
-        capB["Capture"] --> engB["Engine"]
-        uiB["Slint UI"] --> engB
-        engB --> injB["Inject"]
-    end
-    engA <-->|"TLS 1.3, mutual auth"| engB
-    mdns(("mDNS")) -.-> engA
-    mdns -.-> engB
-```
+<p align="center">
+  <img src="docs/media/architecture.png" width="900" alt="Two computers, A and B. On each one, keyboard and mouse input is captured and injected through the operating system, a single engine owns all state and talks to the Slint interface, and the two engines connect over TLS 1.3 with mutual authentication and pinned identities. mDNS only introduces the computers to each other and never grants trust.">
+</p>
 
 - **One engine per computer.** A single actor owns all state; a pure state machine (events in, effects out) decides who controls whom, so
   the logic is testable without a keyboard, a mouse or a network.
